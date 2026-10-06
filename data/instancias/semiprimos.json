@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "meta": {
+    "estado": "pendiente para la Entrega 2",
+    "generador": "scripts/generar_instancias.py --semilla 2026",
+    "tipo": "semiprimo_balanceado"
+  },
+  "instancias": []
+}

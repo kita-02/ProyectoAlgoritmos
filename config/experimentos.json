@@ -1,0 +1,23 @@
+{
+  "semilla": 2026,
+  "repeticiones": 5,
+  "E1_primalidad": {
+    "algoritmos": ["division_tentativa", "miller_rabin", "miller_rabin_determinista"],
+    "rondas_mr": 20,
+    "max_bits_tentativa": 40
+  },
+  "E2_factorizacion": {
+    "algoritmos": ["tentativa", "rho"],
+    "max_bits": 40
+  },
+  "E3_exponenciacion": {
+    "algoritmos": ["ingenua", "rapida"],
+    "modulo": "18446744073709551557",
+    "exponentes_log2": [4, 6, 8, 10, 12, 14, 16, 18, 20]
+  },
+  "E4_rsa": {
+    "algoritmos": ["descifrar", "descifrar_crt"],
+    "bits": [256, 512, 1024, 2048],
+    "mensajes_por_clave": 10
+  }
+}
