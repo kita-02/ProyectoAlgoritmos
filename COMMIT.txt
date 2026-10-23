@@ -1,0 +1,1 @@
+feat(rsa): claves FIPS 186-5, TCR, texto en bloques, pipeline, formatos, CLI completa, instancias, benchmark, CI + pruebas R1-R12 e I1-I6

@@ -1,9 +1,100 @@
 {
   "version": 1,
   "meta": {
-    "estado": "pendiente para la Entrega 2",
+    "tipo": "carmichael / pseudoprimo_fuerte",
     "generador": "scripts/generar_instancias.py --semilla 2026",
-    "tipo": "carmichael / pseudoprimo_fuerte"
+    "semilla": 2026
   },
-  "instancias": []
+  "instancias": [
+    {
+      "n": "561",
+      "clase": "carmichael",
+      "es_primo": false
+    },
+    {
+      "n": "1105",
+      "clase": "carmichael",
+      "es_primo": false
+    },
+    {
+      "n": "1729",
+      "clase": "carmichael",
+      "es_primo": false
+    },
+    {
+      "n": "2465",
+      "clase": "carmichael",
+      "es_primo": false
+    },
+    {
+      "n": "2821",
+      "clase": "carmichael",
+      "es_primo": false
+    },
+    {
+      "n": "6601",
+      "clase": "carmichael",
+      "es_primo": false
+    },
+    {
+      "n": "8911",
+      "clase": "carmichael",
+      "es_primo": false
+    },
+    {
+      "n": "41041",
+      "clase": "carmichael",
+      "es_primo": false
+    },
+    {
+      "n": "825265",
+      "clase": "carmichael",
+      "es_primo": false
+    },
+    {
+      "n": "321197185",
+      "clase": "carmichael",
+      "es_primo": false
+    },
+    {
+      "n": "2047",
+      "clase": "spsp(2)",
+      "es_primo": false
+    },
+    {
+      "n": "1373653",
+      "clase": "spsp(2,3)",
+      "es_primo": false
+    },
+    {
+      "n": "25326001",
+      "clase": "spsp(2,3,5)",
+      "es_primo": false
+    },
+    {
+      "n": "3215031751",
+      "clase": "spsp(2,3,5,7)",
+      "es_primo": false
+    },
+    {
+      "n": "2152302898747",
+      "clase": "spsp(2..11)",
+      "es_primo": false
+    },
+    {
+      "n": "3474749660383",
+      "clase": "spsp(2..13)",
+      "es_primo": false
+    },
+    {
+      "n": "341550071728321",
+      "clase": "spsp(2..17)",
+      "es_primo": false
+    },
+    {
+      "n": "3825123056546413051",
+      "clase": "spsp(2..23)",
+      "es_primo": false
+    }
+  ]
 }

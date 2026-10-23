@@ -11,4 +11,4 @@ Las funciones se importan desde cada módulo, por ejemplo:
 su propio commit sin romper los imports de los demás.)
 """
 
-__version__ = "0.1.0"   # Entrega 1: prototipo mínimo ejecutable
+__version__ = "0.2.0"   # Entrega 2: implementación funcional y pruebas

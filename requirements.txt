@@ -1,10 +1,7 @@
-# Entrega 1 (prototipo): solo la biblioteca estándar de Python >= 3.8.
-# No hace falta instalar nada para ejecutar los scripts de demostración.
-#
-# Entrega 2 (pruebas y experimentos) - descomentar cuando se usen:
-# pytest>=8.0        # pruebas unitarias
-# hypothesis>=6.100  # pruebas basadas en propiedades
-# sympy>=1.12        # oráculo de referencia (solo validación)
-# pandas>=2.0        # resumen de resultados
-# matplotlib>=3.8    # gráficos
-# gmpy2>=2.1         # opcional: prototipo de aritmética GMP
+# Entrega 2: pruebas, oráculo de referencia y experimentos.
+# La biblioteca en sí solo usa la biblioteca estándar de Python >= 3.10.
+pytest>=8.0         # pruebas unitarias y de integración
+pytest-cov>=5.0     # cobertura de código
+hypothesis>=6.100   # pruebas basadas en propiedades
+sympy>=1.12         # oráculo de referencia (solo en las pruebas)
+gmpy2>=2.1          # opcional: prototipo/pipeline con aritmética GMP
