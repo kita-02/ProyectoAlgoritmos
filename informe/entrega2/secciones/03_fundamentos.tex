@@ -1,0 +1,356 @@
+% ================================================================== 3
+\section{Fundamentos y aprendizaje autónomo}
+\label{sec:fundamentos}
+
+% ------------------------------------------------------------------ 3.1
+\subsection{Conceptos y algoritmos requeridos}
+
+\subsubsection{Aritmética modular}
+
+\paragraph{Congruencias.} Dos enteros $a$ y $b$ son congruentes módulo $n$,
+$a \equiv b \pmod n$, si $n \mid (a-b)$. Las operaciones de suma y producto
+son compatibles con la congruencia, de modo que se puede reducir módulo $n$
+después de cada operación sin cambiar el resultado. Esto permite trabajar con
+números de tamaño acotado aunque los exponentes sean enormes.
+
+\paragraph{Máximo común divisor e identidad de Bézout.} El algoritmo de
+Euclides usa $\gcd(a,b) = \gcd(b, a \bmod b)$ y termina en
+$O(\log \min(a,b))$ iteraciones (el peor caso son dos números de Fibonacci
+consecutivos, teorema de Lamé)~\cite{knuth,clrs}. La versión extendida
+obtiene además enteros $x, y$ con $ax + by = \gcd(a,b)$.
+
+\paragraph{Inverso modular.} $a$ tiene inverso módulo $m$ si y solo si
+$\gcd(a, m) = 1$; en ese caso, de $ax + my = 1$ se sigue
+$ax \equiv 1 \pmod m$, es decir, $a^{-1} \equiv x \pmod m$.
+
+\paragraph{Teoremas de Fermat y Euler.} Si $p$ es primo y $p \nmid a$,
+entonces $a^{p-1} \equiv 1 \pmod p$ (Fermat). En general, si
+$\gcd(a,n) = 1$, entonces $a^{\varphi(n)} \equiv 1 \pmod n$ (Euler), donde
+$\varphi(n)$ cuenta los enteros en $[1,n]$ coprimos con $n$. Para dos primos
+distintos, $\varphi(pq) = (p-1)(q-1)$. La función de Carmichael
+$\lambda(pq) = \mathrm{mcm}(p-1, q-1)$ divide a $\varphi(pq)$ y también cumple
+$a^{\lambda(n)} \equiv 1 \pmod n$.
+
+\paragraph{Exponenciación binaria.} Escribiendo $e = \sum_i b_i 2^i$ en
+binario, $a^e = \prod_{b_i = 1} a^{2^i}$. Basta elevar al cuadrado
+$\lfloor\log_2 e\rfloor$ veces y multiplicar una vez por cada bit en 1: el
+costo pasa de $O(e)$ a $O(\log e)$ multiplicaciones modulares~\cite{knuth}. En
+promedio se hacen $1{,}5$ multiplicaciones por bit del exponente.
+
+\paragraph{Exponenciación por ventana deslizante.} Se precalculan las
+potencias impares $a, a^3, \dots, a^{2^k-1}$ y se recorre el exponente de
+izquierda a derecha en bloques de hasta $k$ bits que terminan en 1; cada bloque
+cuesta una sola multiplicación. El número de multiplicaciones baja a
+$\approx b\,(1 + \frac{1}{k+1}) + 2^{k-1}$ para un exponente de $b$ bits, a
+cambio de guardar $2^{k-1}$ potencias~\cite{knuth,hac}.
+
+\subsubsection{Pruebas de primalidad}
+
+\paragraph{División de prueba.} Si $n$ es compuesto, tiene un divisor
+$d \le \sqrt n$. Basta probar 2, 3 y los candidatos de la forma $6k \pm 1$
+(todo primo mayor que 3 tiene esa forma). Es exacta, pero cuesta
+$O(\sqrt n) = O(2^{b/2})$ para $n$ de $b$ bits: crece exponencialmente con el
+número de bits.
+
+\paragraph{Prueba de Fermat y números de Carmichael.} El teorema de Fermat
+sugiere declarar compuesto a $n$ si $a^{n-1} \not\equiv 1 \pmod n$. La prueba
+falla con los \emph{números de Carmichael}, compuestos que cumplen
+$a^{n-1} \equiv 1$ para \emph{todo} $a$ coprimo con $n$; el menor es
+$561 = 3 \cdot 11 \cdot 17$. Por eso no se usa sola.
+
+\paragraph{Miller--Rabin.} Si $p$ es primo impar, las únicas raíces
+cuadradas de 1 módulo $p$ son $\pm 1$. Escribiendo $n-1 = 2^s d$ con $d$
+impar, para todo $a$ coprimo con un primo $n$ se cumple $a^d \equiv 1$ o
+$a^{2^j d} \equiv -1 \pmod n$ para algún $0 \le j < s$. Una base $a$ que
+viola esta condición es un \emph{testigo} de que $n$ es
+compuesto~\cite{miller1976}. Rabin demostró que, para $n$ compuesto impar, a
+lo sumo $1/4$ de las bases no son testigos~\cite{rabin1980}; con $r$ bases
+aleatorias independientes, la probabilidad de declarar primo a un compuesto
+es como máximo $4^{-r}$. Cada ronda cuesta una exponenciación modular: el
+costo total es $O(r\,b\,M(b))$, polinomial en $b$.
+
+\paragraph{Variante determinista.} Con las 12 primeras bases primas
+($2, 3, \dots, 37$) la prueba es exacta para todo
+$n < 3{,}18 \times 10^{23}$~\cite{sorenson2017}. Para cualquier $n$, el
+algoritmo AKS~\cite{aks2004} decide la primalidad en tiempo polinomial
+determinista, aunque en la práctica es mucho más lento que Miller--Rabin.
+
+\paragraph{Criba de primos pequeños.} Al generar un primo aleatorio, la
+mayoría de los candidatos tiene algún factor primo pequeño. Dividir antes por
+los primos menores que una cota $L$ los descarta con divisiones baratas. Por el
+teorema de Mertens, la fracción de impares sin factores primos menores que $L$
+es $\prod_{3 \le p < L}(1 - 1/p)$; para $L = 2000$ vale $0{,}147$, de modo que
+solo el 15\,\% de los candidatos llega a Miller--Rabin.
+
+\subsubsection{Factorización entera}
+
+\paragraph{División de prueba.} Divide sucesivamente entre 2, 3 y $6k \pm 1$
+hasta $\sqrt n$. Su peor caso es un semiprimo balanceado $n = pq$ con
+$p \approx q \approx \sqrt n$, que es precisamente el tipo de módulo que usa
+RSA.
+
+\paragraph{Pollard Rho.} Se itera $x_{i+1} = f(x_i) = x_i^2 + c \bmod n$. Si
+$p$ es el menor factor primo de $n$, la sucesión reducida módulo $p$ toma a
+lo sumo $p$ valores y, si se comporta como aleatoria, repite un valor tras
+$O(\sqrt p)$ pasos esperados por la \emph{paradoja del cumpleaños}. Cuando
+$x_i \equiv x_j \pmod p$, $p$ divide a $\gcd(|x_i - x_j|, n)$. La detección
+de ciclos de Floyd compara $x_i$ con $x_{2i}$ («tortuga y liebre») usando
+memoria constante~\cite{pollard1975}. Como $p \le \sqrt n$, el costo esperado
+es $O(n^{1/4})$ iteraciones. Este análisis es \emph{heurístico}: supone que
+$f$ se comporta como una función aleatoria.
+
+\paragraph{Variante de Brent.} Brent~\cite{brent1980} detecta el ciclo
+comparando $x_i$ con el valor guardado en la última potencia de 2, lo que
+requiere una evaluación de $f$ por paso en lugar de tres. Además acumula el
+producto de las diferencias $|x - y|$ módulo $n$ y calcula un solo mcd por lote
+de pasos. Tiene el mismo orden $O(n^{1/4})$ con una constante menor.
+
+\subsubsection{El criptosistema RSA}
+
+\paragraph{Esquema~\cite{rsa1978}.} Se eligen dos primos distintos $p, q$; se
+calcula $n = pq$; se elige $e$ coprimo con $\varphi(n)$ (o con $\lambda(n)$) y
+se obtiene $d = e^{-1}$ módulo ese valor. La clave pública es $(n, e)$ y la
+privada es $d$. Se cifra con $c = m^e \bmod n$ y se descifra con
+$m = c^d \bmod n$, para $0 \le m < n$.
+
+\paragraph{Corrección.} Como $ed = 1 + t\,\varphi(n)$, por Fermat
+$m^{ed} \equiv m \pmod p$ y $m^{ed} \equiv m \pmod q$ (también si $p \mid m$),
+y por el Teorema Chino del Resto $m^{ed} \equiv m \pmod n$.
+
+\paragraph{Descifrado por el Teorema Chino del Resto.} Con
+$d_p = d \bmod (p-1)$, $d_q = d \bmod (q-1)$ y $q_{inv} = q^{-1} \bmod p$ se
+calculan $m_1 = c^{d_p} \bmod p$ y $m_2 = c^{d_q} \bmod q$ y se recombinan con
+la fórmula de Garner, $m = m_2 + q\,\big(q_{inv}(m_1 - m_2) \bmod p\big)$.
+Son dos exponenciaciones con números de la mitad de bits; con multiplicación
+escolar cada una cuesta la octava parte, y el total, la cuarta parte del
+descifrado directo~\cite{qc1982,hac}.
+
+\paragraph{Seguridad.} Quien factoriza $n$ obtiene $p$, $q$, $\varphi(n)$ y,
+con Euclides extendido, $d$: la seguridad de RSA descansa en la dificultad
+práctica de factorizar. NIST considera que una clave de 2048 bits ofrece
+alrededor de 112 bits de seguridad, y una de 3072, alrededor de
+128~\cite{nist80057}. Además, RSA «de libro de texto» es determinista y
+maleable; en la práctica se usa con relleno OAEP~\cite{rfc8017}.
+
+\subsubsection{Estándares de RSA que sigue el proyecto}
+
+RSA como algoritmo es uno solo; lo que tiene versiones son los
+\textbf{estándares} que establecen cómo usarlo de forma correcta y segura. El
+proyecto sigue dos:
+
+\begin{table}[H]
+\centering\small
+\caption{Estándares aplicados en cada parte del sistema.}
+\label{tab:estandares}
+\begin{tabularx}{\textwidth}{@{}R{3.0cm} R{3.4cm} Y@{}}
+\toprule
+\textbf{Parte} & \textbf{Estándar} & \textbf{Qué se toma}\\
+\midrule
+Generación de claves aleatorias & \textbf{NIST FIPS 186-5}~\cite{fips186}, apéndice A.1 & $e = 65537$; $p$ y $q$
+de $b/2$ bits con los dos bits altos en 1; $\gcd(e,p-1)=\gcd(e,q-1)=1$;
+$|p-q| > 2^{b/2-100}$; $d = e^{-1} \bmod \lambda(n)$ con $d > 2^{b/2}$.\\
+Cifrado y descifrado & \textbf{PKCS \#1 v2.2} (RFC 8017)~\cite{rfc8017} & Primitivas RSAEP
+($c = m^e \bmod n$) y RSADP ($m = c^d \bmod n$), incluido el descifrado con la
+representación $(p, q, d_P, d_Q, q_{inv})$ de la clave privada (sección 3.2).\\
+Relleno & PKCS \#1 v2.2, RSAES-OAEP & No implementado: se usa RSA sin relleno (primitivas RSAEP/RSADP).\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Las versiones anteriores de PKCS~\#1 son v1.5 (relleno hoy considerado
+vulnerable), v2.0 (introduce OAEP) y v2.1; la v2.2 es la vigente. Los
+estándares definen \emph{qué} se calcula y qué condiciones deben cumplir las
+claves, no con qué algoritmo hacer la exponenciación ni cómo buscar los primos:
+ahí está el espacio de optimización del proyecto. Las claves manuales
+(\texttt{generar\_claves(p, q, e)}) usan $\varphi(n)$ para reproducir el
+ejemplo resuelto a mano; las aleatorias usan $\lambda(n)$, como exige
+FIPS~186-5. FIPS~186-5 exige además claves de al menos 2048 bits; el proyecto
+admite claves menores solo con fines educativos.
+
+% ------------------------------------------------------------------ 3.2
+\subsection{Fuentes estudiadas y criterios de selección}
+
+Se priorizaron libros de referencia y artículos originales revisados por
+pares para los fundamentos, y documentación oficial (normas y documentación
+de bibliotecas) para las decisiones técnicas.
+
+\begin{table}[H]
+\centering\small
+\caption{Evaluación de las fuentes principales.}
+\label{tab:fuentes}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright}p{4.1cm} >{\raggedright}p{2.4cm} Y@{}}
+\toprule
+\textbf{Fuente} & \textbf{Tipo} & \textbf{Uso y valoración}\\
+\midrule
+Cormen et al.~\cite{clrs}, Knuth~\cite{knuth} & Libros de texto & Base de Euclides, exponenciación,
+Miller--Rabin y Pollard Rho. Muy confiables y con notación clara; no recogen resultados
+recientes sobre bases deterministas.\\
+Menezes et al.~\cite{hac} & Manual técnico & Algoritmos criptográficos con pseudocódigo
+(ventana deslizante, TCR). Confiable, aunque de 1996: se contrastó con normas actuales.\\
+Rivest et al.~\cite{rsa1978}, Miller~\cite{miller1976}, Rabin~\cite{rabin1980},
+Pollard~\cite{pollard1975}, Brent~\cite{brent1980}, Quisquater y Couvreur~\cite{qc1982} &
+Artículos originales & Fuentes primarias de los algoritmos implementados; permiten citar los
+resultados con exactitud.\\
+Sorenson y Webster~\cite{sorenson2017}, Agrawal et al.~\cite{aks2004} & Artículos recientes &
+Estado del arte en primalidad determinista; base del modo determinista.\\
+NIST SP 800-57~\cite{nist80057}, FIPS 186-5~\cite{fips186}, RFC 8017~\cite{rfc8017} & Normas
+oficiales & Tamaños de clave, generación de claves y primitivas. Fuente de mayor autoridad para
+decisiones de seguridad.\\
+Documentación de Python~\cite{pydocs}, pytest~\cite{pytest}, Hypothesis~\cite{hypothesis},
+gmpy2~\cite{gmpy2} & Documentación oficial & Configuración de herramientas; se prefirió a
+tutoriales no verificados.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Diferencias entre fuentes.} Al comparar las fuentes se
+identificaron dos matices que afectan al diseño:
+\begin{enumerate}
+  \item \textbf{Cota de error de Miller--Rabin.} Los libros de texto dan la
+        cota de peor caso $4^{-r}$; para candidatos elegidos al azar el error
+        real es mucho menor~\cite{dlp1993}, por eso las normas permiten menos
+        rondas en la generación de primos~\cite{fips186}. El proyecto usa
+        $r = 20$ por defecto, priorizando la cota de peor caso, porque la
+        biblioteca también recibe entradas adversas elegidas por el usuario.
+  \item \textbf{Complejidad de Pollard Rho.} Algunas fuentes presentan
+        $O(n^{1/4})$ como resultado demostrado; las fuentes primarias aclaran
+        que es una estimación heurística. Por eso los experimentos miden
+        también iteraciones, no solo tiempo.
+\end{enumerate}
+
+\begin{table}[H]
+\centering\small
+\caption{Estado del arte y papel de cada alternativa en el proyecto. $b$: bits de $n$;
+$L_n[\alpha, c] = \exp\!\big((c+o(1))(\ln n)^\alpha(\ln\ln n)^{1-\alpha}\big)$.}
+\label{tab:estado-arte}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright}p{3.4cm} >{\raggedright}p{2.2cm} >{\raggedright}p{3.0cm} Y@{}}
+\toprule
+\textbf{Algoritmo} & \textbf{Tipo} & \textbf{Costo} & \textbf{Papel en el proyecto}\\
+\midrule
+\multicolumn{4}{@{}l}{\emph{Primalidad}}\\
+División de prueba & Exacto & $O(2^{b/2})$ & \textbf{Implementado}: primera alternativa.\\
+Fermat & Probabilístico & $O(b\,M(b))$ por base & Descartado: falla con Carmichael.\\
+Miller--Rabin & Probabilístico & $O(r\,b\,M(b))$ & \textbf{Implementado}: segunda alternativa.\\
+MR con 12 bases fijas & Exacto (acotado) & $O(12\,b\,M(b))$ & \textbf{Implementado} (modo determinista).\\
+Baillie--PSW & Probabilístico & $O(b\,M(b))$ & No se implementa~\cite{bw1980}.\\
+AKS & Exacto & polinomial, muy lento & Solo como referencia teórica~\cite{aks2004}.\\
+\midrule
+\multicolumn{4}{@{}l}{\emph{Factorización}}\\
+División de prueba & Exacto & $O(\sqrt n)$ & \textbf{Implementado}: primera alternativa.\\
+Pollard Rho (Floyd) & Aleatorizado & $O(n^{1/4})$ esperado & \textbf{Implementado}.\\
+Pollard Rho (Brent) & Aleatorizado & $O(n^{1/4})$, menor constante & \textbf{Implementado}~\cite{brent1980}.\\
+Curvas elípticas (ECM) & Aleatorizado & $L_p[1/2, \sqrt 2]$ & Fuera de alcance~\cite{lenstra1987}.\\
+Criba del cuerpo de números & Heurístico & $L_n[1/3, 1{,}923]$ & Fuera de alcance; récords públicos (RSA-240, 795 bits)~\cite{boudot2020}.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ------------------------------------------------------------------ 3.3
+\subsection{Conocimientos nuevos que el grupo tuvo que adquirir}
+
+\begin{table}[H]
+\centering\footnotesize
+\caption{Conocimientos nuevos, por qué fueron necesarios y dónde se aplicaron.}
+\label{tab:conocimientos}
+\begin{tabularx}{\textwidth}{@{}R{3.4cm} Y Y l@{}}
+\toprule
+\textbf{Conocimiento} & \textbf{Por qué fue necesario} & \textbf{Dónde se aplicó} & \textbf{Responsable}\\
+\midrule
+Exponenciación por ventana y ancho óptimo & Reducir multiplicaciones en el descifrado & \texttt{exp\_modular\_ventana}, \texttt{ventana\_optima} & Francesco\\
+Aritmética GMP (\texttt{gmpy2}) & Separar costo algorítmico de costo de implementación & \texttt{prototipo\_gmpy2.py}, \texttt{pipeline --gmpy2} & Francesco\\
+Testigos fuertes, bases deterministas & Primalidad exacta y rápida bajo $3{,}18\cdot10^{23}$ & \texttt{miller\_rabin\_determinista} & Orlando\\
+Criba y teorema de Mertens & Reducir llamadas a Miller--Rabin al generar primos & \texttt{pasa\_criba}, \texttt{generar\_primo} & Orlando\\
+pytest e Hypothesis & Pruebas automatizadas y por propiedades & \texttt{tests/} (397 pruebas) & Orlando\\
+Detección de ciclos de Brent y lotes de mcd & Factorizar con menos evaluaciones & \texttt{pollard\_rho\_brent} & Camila\\
+Ajuste por mínimos cuadrados en escala logarítmica & Contrastar mediciones con la complejidad teórica & \texttt{ajuste\_complejidad.py} & Camila\\
+FIPS 186-5 y PKCS \#1 v2.2 & Generar claves y descifrar según los estándares & \texttt{generar\_claves\_\allowbreak aleatorias}, \texttt{descifrar\_crt} & Emmi\\
+GitHub Actions & Ejecutar las pruebas en cada \emph{push} en Linux y Windows & \texttt{.github/\allowbreak workflows/\allowbreak pruebas.yml} & Emmi\\
+Medición reproducible en Python & Tiempos fiables y conteos exactos & \texttt{benchmark.py} (\texttt{perf\_\allowbreak counter}, \texttt{trace\allowbreak malloc}, \texttt{gc}) & Emmi\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ------------------------------------------------------------------ 3.4
+\subsection{Estrategia y evidencias de aprendizaje autónomo}
+
+\paragraph{Estrategia.} Las necesidades de aprendizaje surgen al formular,
+diseñar e implementar. Cada necesidad se asigna al integrante responsable del
+módulo donde aparece, sin perjuicio de que todos deban comprender el pipeline
+completo. Para cada necesidad se define una actividad independiente, una fuente
+principal y una \emph{evidencia verificable} en el repositorio (un archivo, una
+prueba o un commit propio). El plan se actualiza en cada entrega: la columna
+«Estado» indica si la necesidad ya se cubrió y con qué evidencia.
+
+\newcommand{\planhead}{%
+\toprule
+\textbf{\#} & \textbf{Necesidad} & \textbf{Actividad independiente} & \textbf{Fuente} & \textbf{Evidencia} & \textbf{Estado}\\
+\midrule}
+\newcolumntype{N}{>{\raggedright\arraybackslash}p{2.9cm}}
+\newcolumntype{F}{>{\raggedright\arraybackslash}p{1.5cm}}
+\newcolumntype{V}{>{\raggedright\arraybackslash}p{2.9cm}}
+\newcolumntype{S}{>{\raggedright\arraybackslash}p{1.5cm}}
+
+\begin{table}[H]
+\centering\footnotesize
+\caption{Plan de aprendizaje de F.~Canal (aritmética modular).}
+\begin{tabularx}{\textwidth}{@{}c N Y F V S@{}}
+\planhead
+1 & Congruencias, Fermat y Euler & Demostrar a mano la corrección de RSA & \cite{clrs} & Sec.~\ref{sec:fundamentos}, \ref{sec:formulacion} & Cubierto (E1)\\
+2 & Invariante de Euclides extendido & Trazar $(17, 3120)$ y comprobar el invariante & \cite{knuth} & Tabla~\ref{tab:traza-euclides}; \texttt{aritmetica.py} & Cubierto (E1)\\
+3 & Exponenciación binaria y su costo & Contar multiplicaciones para $e=17$ y $e=65537$ & \cite{knuth} & Tabla~\ref{tab:traza-exp}; prueba A7 & Cubierto (E1)\\
+4 & Enteros grandes con \texttt{gmpy2} & Comparar \texttt{powmod} con \texttt{pow} y la implementación propia & \cite{gmpy2} & \texttt{prototipo\_\allowbreak gmpy2.py} & Cubierto (E2)\\
+5 & Ventana deslizante y ancho óptimo & Derivar el costo $2^{k-1} + b/(k+1)$ y verificarlo con el contador & \cite{knuth,hac} & \texttt{exp\_modular\_\allowbreak ventana}; A5, A7 & Cubierto (E2)\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering\footnotesize
+\caption{Plan de aprendizaje de O.~Clemente (primalidad).}
+\begin{tabularx}{\textwidth}{@{}c N Y F V S@{}}
+\planhead
+1 & Testigos fuertes y cota $1/4$ & Leer los artículos originales y trazar $n = 561$ con $a = 2$ & \cite{miller1976,rabin1980} & Tabla~\ref{tab:traza-mr}; P8 & Cubierto (E1)\\
+2 & Carmichael y pseudoprimos fuertes & Reunir ejemplos y verificarlos con \texttt{sympy} & \cite{pomerance1980,sorenson2017} & Pruebas P3, P4 & Cubierto (E1)\\
+3 & Error de peor caso frente a caso promedio & Contrastar libros y normas & \cite{dlp1993,fips186} & Sec.~\ref{sec:fundamentos} & Cubierto (E1)\\
+4 & Pruebas unitarias y por propiedades & Escribir pruebas con \texttt{pytest} e Hypothesis & \cite{pytest,hypothesis} & \texttt{tests/}; X1--X6 & Cubierto (E2)\\
+5 & Bases deterministas y criba & Implementar las 12 bases y la criba; medir el ahorro & \cite{sorenson2017} & P9--P11; experimento E5 & Cubierto (E2)\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering\footnotesize
+\caption{Plan de aprendizaje de C.~Fernández (factorización).}
+\begin{tabularx}{\textwidth}{@{}c N Y F V S@{}}
+\planhead
+1 & Pollard Rho y paradoja del cumpleaños & Leer el artículo original y trazar $n = 3233$ & \cite{pollard1975,clrs} & Tabla~\ref{tab:traza-rho} & Cubierto (E1)\\
+2 & Detección de ciclos: Floyd frente a Brent & Comparar ambos en papel e implementarlos & \cite{brent1980,knuth} & \texttt{pollard\_rho\_\allowbreak brent}; F8 & Cubierto (E2)\\
+3 & Estado del arte de la factorización & Revisar ECM, cribas y récords & \cite{lenstra1987,boudot2020} & Tabla~\ref{tab:estado-arte} & Cubierto (E1)\\
+4 & Límites en algoritmos aleatorizados & Acotar iteraciones y reintentos de Rho & \cite{pollard1975} & \texttt{max\_iter}; F7 & Cubierto (E2)\\
+5 & Experimentación y ajuste de modelos & Aprender \texttt{pandas}, \texttt{matplotlib} y mínimos cuadrados & \cite{pydocs} & \texttt{ajuste\_\allowbreak complejidad.py} & Cubierto (E2)\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering\footnotesize
+\caption{Plan de aprendizaje de E.~Huaman (RSA e infraestructura).}
+\begin{tabularx}{\textwidth}{@{}c N Y F V S@{}}
+\planhead
+1 & Seguridad de RSA y tamaños de clave & Revisar normas y comparar recomendaciones & \cite{nist80057,rfc8017} & Sec.~\ref{sec:introduccion}, \ref{sec:fundamentos} & Cubierto (E1)\\
+2 & Git, GitHub y proyectos Python reproducibles & Configurar repositorio, \texttt{src/} y README & \cite{progit,pypa} & Historial; \texttt{README.md} & Cubierto (E1)\\
+3 & TCR y recombinación de Garner & Estudiar el descifrado acelerado y verificarlo a mano & \cite{qc1982,hac} & \texttt{descifrar\_crt}; R1, R6 & Cubierto (E2)\\
+4 & Generación de claves según FIPS 186-5 & Implementar las condiciones del apéndice A.1 & \cite{fips186} & \texttt{generar\_claves\_\allowbreak aleatorias}; R4, R5 & Cubierto (E2)\\
+5 & Integración continua y medición & GitHub Actions; \texttt{perf\_counter}, \texttt{tracemalloc} & \cite{pydocs} & \texttt{pruebas.yml}; \texttt{benchmark.py} & Cubierto (E2)\\
+6 & Relleno OAEP & Estudiar RSAES-OAEP y MGF1 & \cite{rfc8017} & -- & En curso\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Evidencias.} Cada necesidad cubierta tiene un archivo o una prueba
+en el repositorio y un commit hecho desde la cuenta del integrante
+(Anexo~\ref{anx:contribuciones}). Las necesidades comunes del grupo
+---comprender el pipeline completo, trabajar con Git desde la propia cuenta y
+poder ejecutar y explicar cualquier script--- se evidencian en las
+demostraciones de los avances (Anexo~\ref{anx:seguimiento}).
+

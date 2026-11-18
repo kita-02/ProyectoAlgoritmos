@@ -1,0 +1,139 @@
+% ================================================================== 9
+\section{Metodología experimental}
+\label{sec:metodologia}
+
+\subsection{Preguntas de evaluación e hipótesis}
+
+\begin{table}[H]
+\centering\small
+\caption{Preguntas de evaluación, hipótesis y experimento que las responde.}
+\label{tab:preguntas}
+\begin{tabularx}{\linewidth}{@{}l Y Y c@{}}
+\toprule
+\textbf{N.º} & \textbf{Pregunta} & \textbf{Hipótesis (según la teoría)} & \textbf{Exp.}\\
+\midrule
+Q1 & ¿Desde qué tamaño conviene Miller--Rabin frente a la división de prueba? & La división crece como $2^{b/2}$ y MR de forma polinomial: MR gana desde unas decenas de bits & E1\\
+Q2 & ¿Cuánto más rápido factoriza Pollard Rho, y cuánto aporta Brent? & Rho crece como $2^{b/4}$ frente a $2^{b/2}$; Brent mantiene el orden con menor constante & E2\\
+Q3 & ¿Cuántas multiplicaciones ahorra la ventana deslizante? & De $1{,}5$ a $\approx 1 + 1/(k+1)$ multiplicaciones por bit del exponente & E3\\
+Q4 & ¿Cuánto acelera el TCR el descifrado? & Hasta 4 veces con multiplicación escolar; menos con claves pequeñas & E4\\
+Q5 & ¿Cuántas pruebas de Miller--Rabin evita la criba? & $\approx 85\,\%$, por el teorema de Mertens, con el mismo primo resultante & E5\\
+Q6 & ¿Cuánto se acelera el pipeline RSA completo? & Varias veces, concentrado en generar claves y descifrar; el cifrado no cambia & E6\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Instancias y tamaños}
+
+\begin{table}[H]
+\centering
+\caption{Experimentos del diseño definitivo (\texttt{config/experimentos.json}).}
+\label{tab:diseno}
+\scriptsize
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\linewidth}{@{}l R{2.3cm} R{3.2cm} R{3.0cm} Y@{}}
+\toprule
+\textbf{Exp.} & \textbf{Alternativas} & \textbf{Instancias} & \textbf{Tamaños} & \textbf{Verificación}\\
+\midrule
+E1 & división, MR (20 rondas), MR determinista & \texttt{primos.json} (peor caso) y \texttt{adversos.json} (Carmichael y pseudoprimos fuertes) & 8--512 bits; división hasta 48 & \texttt{sympy.isprime}\\
+E2 & división, Rho, Brent & \texttt{semiprimos.json}: $p$ y $q$ de $b/2$ bits (peor caso de la división) & 16--64 bits; división hasta 48 & \texttt{sympy.factorint}\\
+E3 & binaria, ventana & módulo, base y exponente aleatorios de $b$ bits (caso promedio), 5 por tamaño & 256, 512, 1024, 2048, 4096 & \texttt{pow}\\
+E4 & directo, TCR & 3 claves FIPS 186-5 por tamaño, 10 mensajes por clave & 512, 1024, 2048, 4096 & mensaje original\\
+E5 & sin criba, con criba & 5 semillas por tamaño (los mismos candidatos en ambas) & 256, 512, 1024, 2048 & \texttt{sympy.isprime}, mismo primo\\
+E6 & pipeline base, optimizado & 3 semillas por tamaño, 10 mensajes & 512, 1024, 2048, 4096 & misma clave, \texttt{pow}, mensajes\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Variables y métricas}
+
+\begin{itemize}
+  \item \textbf{Variables independientes:} la alternativa (primera o segunda) y el tamaño de la entrada en bits.
+  \item \textbf{Variables controladas:} las mismas instancias y semillas para todas las alternativas de
+        un experimento (comparación pareada); el mismo equipo, intérprete y proceso; recolector de
+        basura desactivado durante cada medición; parámetros por defecto fijos ($k$ óptimo, 20
+        rondas, lotes de 128).
+  \item \textbf{Métricas (variables dependientes):} tiempo en milisegundos (mediana, mínimo, máximo y
+        coeficiente de variación de las repeticiones); multiplicaciones y divisiones modulares,
+        llamadas a mcd e iteraciones (independientes del hardware); memoria pico con
+        \texttt{tracemalloc}; llamadas a Miller--Rabin (E5); corrección (\texttt{ok}) y estabilidad
+        entre repeticiones (\texttt{estable}).
+\end{itemize}
+
+\subsection{Entorno}
+
+Las mediciones preliminares se ejecutaron con CPython~3.13.18 en Linux x86\_64,
+en un solo proceso, con la versión 0.2.0 de la biblioteca. Cada corrida guarda
+su entorno en \texttt{metadatos.json} (fecha, versión de Python, sistema,
+procesador, commit, semilla y hash de la configuración), de modo que cada
+resultado se puede rastrear hasta el código y la configuración que lo produjo.
+
+\subsection{Procedimiento reproducible}
+
+Para cada alternativa e instancia, \texttt{benchmark.medir} ejecuta:
+\begin{enumerate}
+  \item una ejecución de conteo, no cronometrada, con \texttt{Contador} y \texttt{tracemalloc};
+        su resultado se verifica contra la referencia de la Tabla~\ref{tab:diseno};
+  \item una ejecución de calentamiento, descartada;
+  \item $R$ ejecuciones cronometradas con \texttt{time.perf\_counter}, sin contador y con el
+        recolector de basura desactivado; cada una debe dar el mismo resultado que la de conteo;
+  \item una fila con la mediana y el resto de las métricas.
+\end{enumerate}
+Las mejoras se calculan como la mediana, por tamaño, de los cocientes \emph{sobre
+la misma instancia}, no como cociente de medianas. Los resultados se guardan en
+un CSV por experimento y se procesan con \texttt{graficar.py} (tablas y figuras)
+y \texttt{ajuste\_complejidad.py} (comparación con la teoría). Los comandos para
+reproducir todo están en el Anexo~\ref{anx:uso}.
+
+\begin{table}[H]
+\centering\small
+\caption{Tres configuraciones del mismo procedimiento.}
+\begin{tabularx}{\linewidth}{@{}l c Y r@{}}
+\toprule
+\textbf{Configuración} & \textbf{Repeticiones} & \textbf{Tamaños} & \textbf{Duración}\\
+\midrule
+\texttt{piloto.json} & 3 & pequeños (E3 hasta 512, E4--E6 512 bits) & $\approx 7$\,s por corrida\\
+\texttt{preliminar.json} & 3 & medianos (hasta 2048 bits; E5 hasta 1024) & $\approx 3{,}5$\,min\\
+\texttt{experimentos.json} (definitivo) & 5 & completos (hasta 4096 bits) & más de 30\,min\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Experimento piloto}
+\label{sec:piloto}
+
+El piloto comprueba que el procedimiento produce datos \textbf{correctos,
+coherentes y reproducibles} antes de las corridas grandes.
+\texttt{scripts/verificar\_reproducibilidad.py} ejecuta la configuración piloto
+dos veces y compara:
+
+\begin{table}[H]
+\centering\small
+\caption{Resultado del piloto (\texttt{resultados/piloto/reproducibilidad.md}).}
+\begin{tabularx}{\linewidth}{@{}Y r c@{}}
+\toprule
+\textbf{Comprobación} & \textbf{Resultado} & \\
+\midrule
+\multicolumn{3}{@{}l}{\textit{Correctos}}\\
+Filas medidas por corrida & 184 & \\
+Filas con resultado incorrecto o inestable & 0 & \checkmark\\
+\multicolumn{3}{@{}l}{\textit{Reproducibles}}\\
+Mismas filas en ambas corridas & sí & \checkmark\\
+Filas con conteos de operaciones distintos & 0 & \checkmark\\
+Tiempos con diferencia $\le 25\,\%$ entre corridas & 118/126 (94\,\%) & \checkmark\\
+Diferencia relativa mediana entre corridas & 4,4\,\% & \\
+Coeficiente de variación mediano dentro de una corrida & 5,6\,\% & \\
+\multicolumn{3}{@{}l}{\textit{Coherentes con la teoría}}\\
+E1: la división hace a lo más $\sqrt n/6+1$ iteraciones & 26/26 & \checkmark\\
+E3: la binaria hace a lo más $2b$ multiplicaciones & 4/4 & \checkmark\\
+E3: la ventana hace menos multiplicaciones que la binaria & 4/4 & \checkmark\\
+E4: el TCR descifra en menos tiempo que el directo & 1/1 & \checkmark\\
+E5: la criba reduce las llamadas a Miller--Rabin & 2/2 & \checkmark\\
+E6: el cifrado hace las mismas multiplicaciones en base y optimizado & 1/1 & \checkmark\\
+E6: el descifrado optimizado es más rápido que el base & 1/1 & \checkmark\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Los conteos son exactamente reproducibles porque todo lo aleatorio depende de
+semillas; los tiempos varían un poco entre corridas, como es normal. Las filas
+por debajo de 50\,µs no se comparan, porque ahí domina el ruido del reloj.

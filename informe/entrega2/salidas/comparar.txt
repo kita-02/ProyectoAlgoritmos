@@ -1,0 +1,27 @@
+$ python -m rsa_edu comparar exponenciacion 17 --base 65 --mod 3233
+alternativa                resultado                           ms     mult      div     iter
+rapida                     2790                             0.007        6        0        5
+ventana                    2790                             0.017        5        0        5
+ingenua                    2790                             0.005       17        0       17
+EQUIVALENTES: sí
+
+$ python -m rsa_edu comparar primalidad 2047
+alternativa                resultado                           ms     mult      div     iter
+division_tentativa         False                            0.005        0       10        4
+miller_rabin               False                            0.034       19        0       11
+miller_rabin_determinista  False                            0.041       38        0       22
+EQUIVALENTES: sí
+
+$ python -m rsa_edu comparar factorizacion 3233
+alternativa                resultado                           ms     mult      div     iter
+tentativa                  [53, 61]                         0.025        0       18        9
+rho                        [53, 61]                         0.075        6       12       14
+brent                      [53, 61]                         0.063       21       23       30
+EQUIVALENTES: sí
+
+$ python -m rsa_edu comparar descifrado 2790 --claves clave.json
+alternativa                resultado                           ms     mult      div     iter
+descifrar                  65                               0.013       16        0       12
+descifrar_crt              65                               0.018       19        0       12
+EQUIVALENTES: sí
+

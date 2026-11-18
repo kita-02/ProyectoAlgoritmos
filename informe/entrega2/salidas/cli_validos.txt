@@ -1,0 +1,16 @@
+$ python -m rsa_edu claves -p 61 -q 53 -e 17 --salida clave.json
+n = 3233  (12 bits)
+e = 17
+d = 2753
+claves guardadas en clave.json
+
+$ python -m rsa_edu cifrar 65 --claves clave.json
+2790
+
+$ python -m rsa_edu descifrar 2790 --claves clave.json
+65
+
+$ python -m rsa_edu atacar -n 3233 -e 17
+n = 53 × 61   phi(n) = 3120   d = 2753
+(factorizado con brent en 0.12 ms)
+

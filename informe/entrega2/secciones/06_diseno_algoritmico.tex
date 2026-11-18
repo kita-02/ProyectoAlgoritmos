@@ -1,0 +1,504 @@
+% ================================================================== 6
+\section{Diseño algorítmico}
+\label{sec:diseno-algoritmico}
+
+Para cada etapa del pipeline se diseñaron dos alternativas comparables, ambas
+implementadas por el grupo: una \textbf{primera alternativa} (base), exacta y
+fácil de seguir a mano, y una \textbf{segunda alternativa} (optimizada), que da
+el mismo resultado con menos trabajo.
+
+\begin{table}[H]
+\centering\small
+\caption{Primera y segunda alternativa de cada etapa.}
+\label{tab:alternativas}
+\begin{tabularx}{\textwidth}{@{}l Y Y l@{}}
+\toprule
+\textbf{Etapa} & \textbf{Primera alternativa (base)} & \textbf{Segunda alternativa} & \textbf{Responsable}\\
+\midrule
+Exponenciación modular & Binaria (Alg.~\ref{alg:exp}) & Ventana deslizante (Alg.~\ref{alg:ventana}) & Francesco\\
+Prueba de primalidad & División de prueba & Miller--Rabin y MR determinista (Alg.~\ref{alg:mr}) & Orlando\\
+Generación de primos & Miller--Rabin a todo candidato & Criba de primos $< 2000$ + Miller--Rabin (Alg.~\ref{alg:criba}) & Orlando\\
+Factorización (ataque) & División de prueba & Pollard Rho con Floyd (Alg.~\ref{alg:rho}) y Brent (Alg.~\ref{alg:brent}) & Camila\\
+Descifrado & Directo: $c^d \bmod n$ & Teorema Chino del Resto (Alg.~\ref{alg:tcr}) & Emmi\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Algoritmos y pseudocódigo}
+\label{sec:pseudocodigo}
+
+Notación: $k = \lceil \log_2 n \rceil$ es el número de bits de $n$ (en otras secciones, $b$);
+$M(k)$ es el costo de multiplicar dos enteros de $k$ bits ($O(k^2)$ con el
+método escolar; CPython usa Karatsuba, $O(k^{1{,}585})$, para enteros grandes).
+
+\subsubsection{Aritmética modular}
+
+\begin{algorithm}[H]
+\caption{\textsc{EuclidesExtendido}$(a, b)$ \hfill iterativo}
+\label{alg:euclides}
+\begin{algorithmic}[1]
+\Require enteros $a, b \ge 0$
+\Ensure $(g, x, y)$ con $a x + b y = g = \gcd(a,b)$
+\State $(x_0, x_1, y_0, y_1) \gets (1, 0, 0, 1)$
+\While{$b \neq 0$}
+  \State $q \gets \lfloor a / b \rfloor$
+  \State $(a, b) \gets (b,\ a - q b)$
+  \State $(x_0, x_1) \gets (x_1,\ x_0 - q x_1)$;\quad $(y_0, y_1) \gets (y_1,\ y_0 - q y_1)$
+\EndWhile
+\State \Return $(a, x_0, y_0)$
+\end{algorithmic}
+\end{algorithm}
+
+\noindent\textbf{Invariante:} si $a^\ast, b^\ast$ son los valores iniciales,
+en cada iteración $a^\ast x_0 + b^\ast y_0 = a$ y $a^\ast x_1 + b^\ast y_1 = b$.
+Al terminar, $b=0$ y $a=\gcd$, lo que prueba la corrección.
+
+\begin{algorithm}[H]
+\caption{\textsc{InversoModular}$(a, m)$}
+\begin{algorithmic}[1]
+\Require $a$, $m > 1$
+\Ensure $a^{-1} \Mod m$, o error si no existe
+\State $(g, x, \_) \gets \textsc{EuclidesExtendido}(a \Mod m,\ m)$
+\If{$g \neq 1$} \Error{$a$ no es invertible módulo $m$} \EndIf
+\State \Return $x \Mod m$
+\end{algorithmic}
+\end{algorithm}
+
+\begin{minipage}[t]{0.47\textwidth}
+\begin{algorithm}[H]
+\caption{\textsc{ExpIngenua}$(b, e, m)$}
+\begin{algorithmic}[1]
+\Require $e \ge 0$, $m \ge 1$
+\Ensure $b^e \Mod m$
+\If{$m = 1$} \Return $0$ \EndIf
+\State $r \gets 1$;\ $b \gets b \Mod m$
+\For{$i \gets 1$ \textbf{a} $e$}
+  \State $r \gets r \cdot b \Mod m$
+\EndFor
+\State \Return $r$
+\end{algorithmic}
+\end{algorithm}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\begin{algorithm}[H]
+\caption{\textsc{ExpRápida}$(b, e, m)$}
+\label{alg:exp}
+\begin{algorithmic}[1]
+\Require $e \ge 0$, $m \ge 1$
+\Ensure $b^e \Mod m$
+\If{$m = 1$} \Return $0$ \EndIf
+\State $r \gets 1$;\ $b \gets b \Mod m$
+\While{$e > 0$}
+  \If{$e$ es impar} $r \gets r \cdot b \Mod m$ \EndIf
+  \State $e \gets \lfloor e/2 \rfloor$
+  \If{$e > 0$} $b \gets b^2 \Mod m$ \EndIf
+\EndWhile
+\State \Return $r$
+\end{algorithmic}
+\end{algorithm}
+\end{minipage}
+
+\medskip
+\noindent\textbf{Invariante de \textsc{ExpRápida}:} si $B, E$ son los valores
+iniciales, al inicio de cada iteración $r \cdot b^{e} \equiv B^{E} \pmod m$.
+Cuando $e = 0$, $r \equiv B^E$. Realiza exactamente
+$\lfloor \log_2 E \rfloor$ cuadrados y $\mathrm{popcount}(E)$ productos.
+
+\subsubsection{Primalidad}
+
+\begin{algorithm}[H]
+\caption{\textsc{PrimoPorDivisión}$(n)$ \hfill exacto}
+\begin{algorithmic}[1]
+\Require entero $n$
+\Ensure \textsc{verdadero} si y solo si $n$ es primo
+\If{$n < 2$} \Return \textsc{falso} \EndIf
+\If{$n < 4$} \Return \textsc{verdadero} \EndIf
+\If{$2 \mid n$ \textbf{o} $3 \mid n$} \Return \textsc{falso} \EndIf
+\State $i \gets 5$
+\While{$i^2 \le n$} \Comment{todo primo $>3$ es de la forma $6k \pm 1$}
+  \If{$i \mid n$ \textbf{o} $(i+2) \mid n$} \Return \textsc{falso} \EndIf
+  \State $i \gets i + 6$
+\EndWhile
+\State \Return \textsc{verdadero}
+\end{algorithmic}
+\end{algorithm}
+
+\noindent\textbf{Corrección:} si $n$ es compuesto, tiene un divisor
+$d \le \sqrt n$, y su menor factor primo es 2, 3 o de la forma $6k\pm1$; todos
+se prueban antes de que $i^2 > n$.
+
+\begin{algorithm}[H]
+\caption{\textsc{MillerRabin}$(n, r, \mathit{rng}, \mathit{bases})$ \hfill probabilístico}
+\label{alg:mr}
+\begin{algorithmic}[1]
+\Require $n$; número de rondas $r$; generador $\mathit{rng}$; bases opcionales
+\Ensure \textsc{falso} si $n$ es compuesto con certeza; \textsc{verdadero} si es probablemente primo
+\If{$n < 2$} \Return \textsc{falso} \EndIf
+\If{$n \in \{2, 3\}$} \Return \textsc{verdadero} \EndIf
+\If{$n$ es par} \Return \textsc{falso} \EndIf
+\State escribir $n - 1 = 2^s d$ con $d$ impar
+\If{$\mathit{bases}$ no se indicó}
+  \State $\mathit{bases} \gets$ $r$ valores aleatorios en $[2, n-2]$
+\EndIf
+\ForAll{$a \in \mathit{bases}$}
+  \State $a \gets a \Mod n$
+  \If{$a \in \{0, 1, n-1\}$} \Continue \EndIf
+  \If{\textsc{EsTestigo}$(a, s, d, n)$} \Return \textsc{falso} \EndIf
+\EndFor
+\State \Return \textsc{verdadero}
+\Statex
+\Function{EsTestigo}{$a, s, d, n$}
+  \State $x \gets \textsc{ExpRápida}(a, d, n)$
+  \If{$x = 1$ \textbf{o} $x = n-1$} \Return \textsc{falso} \EndIf
+  \For{$j \gets 1$ \textbf{a} $s-1$}
+    \State $x \gets x^2 \Mod n$
+    \If{$x = n - 1$} \Return \textsc{falso} \EndIf
+  \EndFor
+  \State \Return \textsc{verdadero} \Comment{$a$ demuestra que $n$ es compuesto}
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\noindent\textbf{Fundamento:} si $n$ es primo, por Fermat $a^{n-1}\equiv 1$ y la
+única raíz cuadrada de 1 módulo $n$ son $\pm 1$; por eso la sucesión
+$a^d, a^{2d}, \dots, a^{2^s d}$ debe empezar en 1 o pasar por $n-1$. Si $n$ es
+compuesto impar, a lo sumo $1/4$ de las bases no son testigos
+(Rabin~\cite{rabin1980}), así que $r$ rondas independientes dan error
+$\le 4^{-r}$ ($r = 20 \Rightarrow \le 10^{-12}$). \textbf{Modo determinista:}
+con las 12 bases primas $2, 3, \dots, 37$ la prueba es exacta para
+$n < 318\,665\,857\,834\,031\,151\,167\,461$ (Sorenson y
+Webster~\cite{sorenson2017}); este valor límite es precisamente un compuesto que
+engaña a esas 12 bases, y se usa como caso de prueba.
+
+\subsubsection{Factorización}
+
+\begin{algorithm}[H]
+\caption{\textsc{FactorizarPorDivisión}$(n)$ \hfill exacto}
+\begin{algorithmic}[1]
+\Require $n \ge 1$
+\Ensure lista ordenada de factores primos de $n$ (con repetición)
+\State $F \gets [\,]$
+\ForAll{$p \in \{2, 3\}$}
+  \While{$p \mid n$} \State agregar $p$ a $F$;\ $n \gets n / p$ \EndWhile
+\EndFor
+\State $i \gets 5$
+\While{$i^2 \le n$}
+  \ForAll{$c \in \{i, i + 2\}$}
+    \While{$c \mid n$} \State agregar $c$ a $F$;\ $n \gets n / c$ \EndWhile
+  \EndFor
+  \State $i \gets i + 6$
+\EndWhile
+\If{$n > 1$} agregar $n$ a $F$ \Comment{el cofactor restante es primo} \EndIf
+\State \Return $F$
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+\caption{\textsc{PollardRho}$(n, \mathit{rng}, \mathit{maxIter}, R)$ \hfill Floyd}
+\label{alg:rho}
+\begin{algorithmic}[1]
+\Require $n \ge 4$ compuesto; generador; límite opcional de iteraciones; $R$ reintentos
+\Ensure un factor no trivial de $n$, o \textsc{nulo}
+\If{$n$ es par} \Return 2 \EndIf
+\For{$t \gets 1$ \textbf{a} $R$}
+  \State $c \gets$ aleatorio en $[1, n-3]$;\quad $x \gets y \gets$ aleatorio en $[0, n-1]$
+  \State $g \gets 1$;\ $\mathit{it} \gets 0$ \Comment{$f(z) = z^2 + c \Mod n$}
+  \While{$g = 1$}
+    \State $x \gets f(x)$ \Comment{tortuga: un paso}
+    \State $y \gets f(f(y))$ \Comment{liebre: dos pasos}
+    \State $g \gets \gcd(|x - y|, n)$;\ $\mathit{it} \gets \mathit{it} + 1$
+    \If{$\mathit{maxIter}$ definido \textbf{y} $\mathit{it} \ge \mathit{maxIter}$} \Break \EndIf
+  \EndWhile
+  \If{$1 < g < n$} \Return $g$ \EndIf \Comment{si $g = n$: reintentar}
+\EndFor
+\State \Return \textsc{nulo}
+\end{algorithmic}
+\end{algorithm}
+
+\noindent\textbf{Fundamento:} si $p$ es el menor factor primo de $n$, la
+sucesión $x_{i+1} = f(x_i) \Mod p$ se comporta aproximadamente como aleatoria
+y, por la paradoja del cumpleaños, repite un valor tras
+$O(\sqrt p) = O(n^{1/4})$ pasos esperados. Floyd detecta ese ciclo con memoria
+$O(1)$: cuando $x \equiv y \pmod p$, $p \mid \gcd(|x-y|, n)$. Se evitan $c = 0$
+y $c = -2$, que producen sucesiones degeneradas.
+
+\begin{algorithm}[H]
+\caption{\textsc{Factorizar}$(n, \text{método})$ \hfill fachada con pila explícita}
+\begin{algorithmic}[1]
+\Require $n \ge 1$; método $\in \{\text{tentativa}, \text{rho}, \text{brent}\}$
+\Ensure lista ordenada de factores primos
+\If{método $=$ tentativa} \Return \textsc{FactorizarPorDivisión}$(n)$ \EndIf
+\State $F \gets [\,]$;\ $P \gets [n]$
+\While{$P$ no está vacía}
+  \State $m \gets$ \textsc{Desapilar}$(P)$
+  \If{$m = 1$} \Continue \EndIf
+  \If{\textsc{EsPrimo}$(m)$} agregar $m$ a $F$;\ \Continue \EndIf \Comment{Miller--Rabin}
+  \State $d \gets \textsc{PollardRho}(m)$ o \textsc{Brent}$(m)$, según el método
+  \If{$d = \textsc{nulo}$} \Error{no se halló factor} \EndIf
+  \State \textsc{Apilar}$(P, d)$;\ \textsc{Apilar}$(P, m/d)$
+\EndWhile
+\State \Return $\textsc{Ordenar}(F)$
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{RSA}
+
+\begin{algorithm}[H]
+\caption{\textsc{GenerarPrimo}$(b, \mathit{rng})$}
+\begin{algorithmic}[1]
+\Require $b \ge 5$ bits
+\Ensure primo de exactamente $b$ bits
+\Repeat
+  \State $x \gets$ $b$ bits aleatorios;\ poner en 1 los \textbf{dos} bits más altos y el bit 0
+  \Comment{así $p\cdot q$ tiene exactamente $2b$ bits}
+\Until{\textsc{MillerRabin}$(x, 20, \mathit{rng})$}
+\State \Return $x$
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+\caption{\textsc{GenerarClaves}$(k \text{ o } (p, q),\ e)$}
+\begin{algorithmic}[1]
+\Require tamaño $k \ge 10$ bits, o primos $p \neq q$; exponente $e$ opcional
+\Ensure \texttt{KeyPair}
+\If{se dieron $p, q$}
+  \State verificar $p \neq q$ y que ambos sean primos; si no, \Error{parámetros inválidos}
+\Else
+  \Repeat
+    \State $p \gets \textsc{GenerarPrimo}(\lfloor k/2 \rfloor)$;\ $q \gets \textsc{GenerarPrimo}(\lceil k/2 \rceil)$
+  \Until{$p \neq q$ \textbf{y} ($e$ no se dio \textbf{o} $\gcd(e, \varphi) = 1$)}
+\EndIf
+\State $n \gets p q$;\ $\varphi \gets (p-1)(q-1)$
+\If{$e$ no se dio} $e \gets 65537$ si es válido; si no, el menor impar $\ge 3$ coprimo con $\varphi$ \EndIf
+\If{\textbf{no} $(1 < e < \varphi$ \textbf{y} $\gcd(e,\varphi) = 1)$} \Error{$e$ inválido} \EndIf
+\State $d \gets \textsc{InversoModular}(e, \varphi)$
+\State $d_p \gets d \Mod (p-1)$;\ $d_q \gets d \Mod (q-1)$;\ $q_{\mathrm{inv}} \gets \textsc{InversoModular}(q, p)$
+\State \Return $\big((n, e),\ (n, d, p, q, d_p, d_q, q_{\mathrm{inv}})\big)$
+\end{algorithmic}
+\end{algorithm}
+
+\begin{minipage}[t]{0.45\textwidth}
+\begin{algorithm}[H]
+\caption{\textsc{Cifrar} / \textsc{Descifrar}}
+\begin{algorithmic}[1]
+\Require $0 \le m < n$ (entero)
+\State $c \gets \textsc{ExpRápida}(m, e, n)$
+\Statex
+\Require $0 \le c < n$
+\State $m \gets \textsc{ExpRápida}(c, d, n)$
+\end{algorithmic}
+\end{algorithm}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.52\textwidth}
+\begin{algorithm}[H]
+\caption{\textsc{DescifrarTCR}$(c, \text{priv})$}\label{alg:tcr}
+\begin{algorithmic}[1]
+\Require $0 \le c < n$
+\State $m_1 \gets \textsc{ExpRápida}(c \Mod p,\ d_p,\ p)$
+\State $m_2 \gets \textsc{ExpRápida}(c \Mod q,\ d_q,\ q)$
+\State $h \gets q_{\mathrm{inv}} (m_1 - m_2) \Mod p$ \Comment{Garner}
+\State \Return $m_2 + h\, q$
+\end{algorithmic}
+\end{algorithm}
+\end{minipage}
+
+\medskip
+\noindent\textbf{Corrección del TCR:} $m_2 + hq \equiv m_2 \pmod q$ y
+$m_2 + hq \equiv m_2 + (m_1 - m_2) \equiv m_1 \pmod p$; como $0 \le m_2 + hq < pq$,
+por unicidad del TCR es $m$. Por Fermat,
+$c^{d} \equiv c^{d \bmod (p-1)} \pmod p$, de modo que se trabaja con
+exponentes y módulos de la mitad de bits.
+
+\paragraph{Cifrado de texto.} El texto UTF-8 se divide en bloques de
+$t = \lfloor (k-1)/8 \rfloor - 1$ bytes; a cada bloque se antepone el byte
+\texttt{0x01} (para no perder ceros iniciales) y se convierte a entero, lo que
+garantiza $m < n$. Se trata de RSA sin relleno (sin OAEP): es
+\textbf{solo educativo}~\cite{rfc8017}.
+
+\subsubsection{Segundas alternativas (optimizadas)}
+
+\begin{algorithm}[H]
+\caption{\textsc{ExpVentana}$(g, e, m, k)$ \hfill ventana deslizante}
+\label{alg:ventana}
+\begin{algorithmic}[1]
+\Require $e \ge 0$, $m \ge 1$, ancho $k \ge 1$ (por defecto, el que minimiza $2^{k-1} + \mathrm{bits}(e)/(k+1)$)
+\Ensure $g^e \Mod m$
+\If{$m = 1$} \Return $0$ \EndIf
+\State $T[0] \gets g \Mod m$;\ $g_2 \gets g^2 \Mod m$
+\For{$i \gets 1$ \textbf{a} $2^{k-1} - 1$} \State $T[i] \gets T[i-1] \cdot g_2 \Mod m$ \Comment{$T[i] = g^{2i+1}$} \EndFor
+\State $r \gets 1$;\ $i \gets \mathrm{bits}(e) - 1$
+\While{$i \ge 0$}
+  \If{el bit $i$ de $e$ es 0} \State $r \gets r^2 \Mod m$;\ $i \gets i - 1$
+  \Else
+    \State $j \gets$ menor índice $\ge \max(i-k+1, 0)$ con bit $j$ en 1;\ $v \gets$ bits $e[i..j]$ \Comment{$v$ impar}
+    \State $r \gets r^{2^{\,i-j+1}} \cdot T[(v-1)/2] \Mod m$;\ $i \gets j - 1$
+  \EndIf
+\EndWhile
+\State \Return $r$
+\end{algorithmic}
+\end{algorithm}
+
+\noindent\textbf{Invariante:} al procesar los bits $e[\ell-1..i+1]$ ya leídos,
+$r \equiv g^{\lfloor e / 2^{i+1} \rfloor} \pmod m$. Cada ventana termina en un
+bit 1, así que su valor $v$ es impar y $g^v$ está en la tabla. Costo: $\mathrm{bits}(e)$
+cuadrados, un producto por ventana ($\approx \mathrm{bits}(e)/(k+1)$) y $2^{k-1}$
+multiplicaciones de precálculo.
+
+\begin{algorithm}[H]
+\caption{\textsc{GenerarPrimoConCriba}$(b, \mathit{rng}, \mathit{criba})$}
+\label{alg:criba}
+\begin{algorithmic}[1]
+\Require $b \ge 2$ bits; generador; \textit{criba} $\in \{$\textsc{verdadero}, \textsc{falso}$\}$
+\Ensure primo de exactamente $b$ bits
+\State $\mathit{rng}_{MR} \gets$ generador derivado de $\mathit{rng}$ \Comment{las bases no consumen candidatos}
+\Repeat
+  \State $x \gets$ $b$ bits aleatorios de $\mathit{rng}$, con el bit alto y el bit 0 en 1
+  \If{\textit{criba} \textbf{y} $x$ es divisible por algún primo $p < 2000$, $p < x$} \Continue \EndIf
+\Until{\textsc{EsPrimo}$(x, \mathit{rng}_{MR})$} \Comment{MR determinista o 20 rondas}
+\State \Return $x$
+\end{algorithmic}
+\end{algorithm}
+
+\noindent\textbf{Corrección y equivalencia:} la criba solo descarta compuestos
+(un número con un factor primo menor que él no es primo), y los candidatos salen
+del mismo generador con y sin criba; por lo tanto ambas variantes devuelven
+\emph{el mismo primo} y la criba solo ahorra llamadas a Miller--Rabin.
+
+\begin{algorithm}[H]
+\caption{\textsc{Brent}$(n, \mathit{rng}, L = 128)$ \hfill Pollard Rho con detección de Brent}
+\label{alg:brent}
+\begin{algorithmic}[1]
+\Require $n \ge 4$ compuesto impar; tamaño de lote $L$
+\Ensure un factor no trivial de $n$, o \textsc{nulo}
+\State $c, y \gets$ aleatorios;\ $g \gets 1$;\ $r \gets 1$;\ $q \gets 1$
+\While{$g = 1$}
+  \State $x \gets y$
+  \For{$r$ veces} \State $y \gets f(y)$ \EndFor \Comment{$f(z) = z^2 + c \Mod n$}
+  \State $k \gets 0$
+  \While{$k < r$ \textbf{y} $g = 1$}
+    \State $y_s \gets y$
+    \For{$\min(L, r - k)$ veces} \State $y \gets f(y)$;\ $q \gets q \cdot |x - y| \Mod n$ \EndFor
+    \State $g \gets \gcd(q, n)$;\ $k \gets k + L$
+  \EndWhile
+  \State $r \gets 2r$
+\EndWhile
+\If{$g = n$} \Comment{el lote mezcló el factor: retroceder paso a paso}
+  \Repeat \State $y_s \gets f(y_s)$;\ $g \gets \gcd(|x - y_s|, n)$ \Until{$g > 1$}
+\EndIf
+\If{$1 < g < n$} \Return $g$ \Else \ \Return \textsc{nulo} (reintentar con otro $c$) \EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\noindent\textbf{Fundamento:} $y$ avanza de a un paso y se compara con $x$, que
+se fija en las potencias de 2; así cada paso evalúa $f$ una sola vez (Floyd
+evalúa tres veces). El producto $q$ acumula las diferencias y un solo mcd por
+lote detecta si alguna comparte un factor con $n$. Si el lote da $g = n$, el
+retroceso recupera el primer paso en que apareció el factor.
+
+\subsection{Estructuras de datos}
+
+\begin{table}[H]
+\centering\small
+\caption{Estructuras de datos y justificación.}
+\label{tab:estructuras}
+\begin{tabularx}{\textwidth}{@{}l l Y@{}}
+\toprule
+\textbf{Estructura} & \textbf{Tipo en Python} & \textbf{Uso y justificación}\\
+\midrule
+Entero grande & \texttt{int} & Precisión arbitraria nativa; el algoritmo queda visible sin bibliotecas externas.\\
+\texttt{ClavePublica}, \texttt{ClavePrivada}, \texttt{KeyPair} & \texttt{dataclass(frozen)} & Inmutables: una clave no debe cambiar después de generarse. $d_p$, $d_q$ y $q_{inv}$ se derivan como propiedades para el TCR.\\
+\texttt{Contador} & \texttt{dataclass} & Opcional: si es \texttt{None}, el algoritmo no paga costo extra.\\
+Tabla de la ventana & \texttt{list[int]} & $2^{k-1}$ potencias impares, recalculadas en cada exponenciación.\\
+Primos pequeños & \texttt{tuple[int]} & 303 primos menores que 2000, calculados una vez al importar el módulo.\\
+Pila de cofactores & \texttt{list} & Reemplaza la recursión en \texttt{factorizar} y evita el límite de profundidad.\\
+Lista de factores & \texttt{list[int]} & Ordenada y con repetición; se compara directamente con el oráculo.\\
+Instancias, claves & JSON, enteros como texto & Otras herramientas leerían los enteros grandes como flotantes de 53 bits.\\
+Resultados & CSV + \texttt{metadatos.json} & Formato tabular uniforme para todos los experimentos.\\
+Generador aleatorio & \texttt{random.Random(semilla)} & Recibido como parámetro: toda ejecución es reproducible.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Corrección e invariantes}
+
+\begin{table}[H]
+\centering\small
+\caption{Argumento de corrección de cada algoritmo.}
+\label{tab:correccion}
+\begin{tabularx}{\textwidth}{@{}l Y@{}}
+\toprule
+\textbf{Algoritmo} & \textbf{Invariante o argumento de corrección}\\
+\midrule
+Euclides extendido & $a^\ast x_0 + b^\ast y_0 = a$ y $a^\ast x_1 + b^\ast y_1 = b$ en cada iteración; al terminar $a = \gcd$.\\
+Exp.\ binaria & $r \cdot b^{e} \equiv B^{E} \pmod m$ al inicio de cada iteración; con $e = 0$, $r = B^E$.\\
+Exp.\ ventana & $r \equiv g^{\lfloor e/2^{i+1} \rfloor}$ tras leer los bits altos; cada ventana es impar y está en la tabla.\\
+División de prueba & Si $n$ es compuesto tiene un factor primo $\le \sqrt n$, y es 2, 3 o de la forma $6k \pm 1$.\\
+Miller--Rabin & Si $n$ es primo, $a^d, a^{2d}, \dots$ empieza en 1 o pasa por $n-1$; un testigo prueba que es compuesto. Error $\le 4^{-r}$.\\
+Criba & Solo descarta números con un factor primo menor que ellos; no cambia el primo devuelto.\\
+Pollard Rho / Brent & Si devuelve $g$, entonces $1 < g < n$ y $g \mid n$ (se comprueba). La terminación no está garantizada: se acota con \texttt{max\_iter} y reintentos.\\
+Factorizar (fachada) & Cada cofactor se divide o se confirma primo con \textsc{EsPrimo} exacto bajo $3{,}18\cdot10^{23}$; $\prod F = n$.\\
+RSA & $ed \equiv 1 \pmod{\lambda(n)}$ implica $m^{ed} \equiv m \pmod n$ (Fermat y TCR, Sec.~\ref{sec:fundamentos}).\\
+Descifrado TCR & $m_2 + hq \equiv m_1 \pmod p$ y $\equiv m_2 \pmod q$, con $0 \le m_2 + hq < n$: por unicidad del TCR es $m$.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Análisis de complejidad}
+\label{sec:complejidad}
+
+Notación: $b$ es el número de bits de $n$ (o del exponente), $M(b)$ el costo de
+multiplicar dos números de $b$ bits y $k$ el ancho de ventana. CPython usa la
+multiplicación escolar, $M(b) = \Theta(b^2)$, bajo unos 2100 bits, y Karatsuba,
+$M(b) = \Theta(b^{1{,}585})$, por encima. Para algoritmos sobre el \emph{valor} de
+$n$ se usa $n \approx 2^b$.
+
+\begin{table}[H]
+\centering
+\caption{Complejidad temporal y espacial de cada alternativa.}
+\label{tab:complejidad}
+\scriptsize
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\linewidth}{@{}R{2.2cm} R{2.1cm} R{2.6cm} R{2.6cm} Y@{}}
+\toprule
+\textbf{Algoritmo} & \textbf{Operación dominante} & \textbf{Peor caso} & \textbf{Caso promedio} & \textbf{Espacio}\\
+\midrule
+Euclides extendido & división con resto & $O(b)$ iteraciones, $O(b^2)$ bits (Lamé) & igual & $O(b)$: 6 enteros\\
+Exp.\ binaria & multiplicación modular & $2b$ mult.: $O(b\,M(b))$ (exponente con todos los bits en 1) & $1{,}5\,b$ mult.: $O(b\,M(b))$ & $O(b)$: 3 enteros\\
+Exp.\ ventana & multiplicación modular & $b+\frac{b}{k+1}+2^{k-1}$ mult. & $\approx b(1+\frac{1}{k+1})+2^{k-1}$ & $O(2^{k-1}b)$: tabla de potencias impares\\
+División de prueba (primalidad) & división $n \bmod i$ & $n$ primo: $\sqrt n/3$ div.: $O(2^{b/2})$ & $n$ aleatorio: $O(1)$ esperado (la mayoría tiene un factor pequeño) & $O(b)$\\
+Miller--Rabin ($t$ rondas) & exponenciación $a^d\bmod n$ & $n$ primo: $t$ rondas, $O(t\,b\,M(b))$ & $n$ compuesto: $\le4/3$ rondas esperadas & $O(b)$\\
+MR determinista & ídem & 12 rondas: $O(b\,M(b))$, $n<3{,}18\cdot10^{23}$ & ídem & $O(b)$\\
+Criba ($L=2000$) & división por primo pequeño & precálculo $O(L\log\log L)$ \textbf{una vez} (amortizado); por candidato $\le303$ div. & la mayoría de compuestos se descarta en pocas divisiones & 303 primos (constante)\\
+Generar primo & MR por candidato & no acotado (probabilístico) & $\approx\frac{b\ln2}{2}$ candidatos; sin criba todos van a MR, con criba solo $\approx15\%$ & $O(b)$\\
+División de prueba (factorización) & división & $n$ primo o semiprimo balanceado: $O(\sqrt n)=O(2^{b/2})$ & depende del 2.º mayor factor & $O(b)$ + factores\\
+Pollard Rho (Floyd) & 3 evaluaciones de $f$ y 1 mcd por paso & no acotado; limitado por \texttt{max\_iter} & $O(\sqrt p)\le O(n^{1/4})$ pasos & $O(b)$: $x$, $y$, $c$\\
+Brent & 1 evaluación de $f$ por paso, 1 mcd cada 128 & ídem, $+128$ pasos de retroceso & $O(n^{1/4})$ con constante menor & $O(b)$\\
+Descifrado directo & multiplicación mod $n$ & $2b$ mult.\ de $b$ bits & $1{,}5\,b\,M(b)$ & $O(b)$\\
+Descifrado TCR & multiplicación mod $p$, $q$ & $2\cdot2\frac{b}{2}$ mult.\ de $\frac{b}{2}$ bits & $\approx\frac{1}{4}$ del directo con $M$ escolar & $O(b)$\\
+Pipeline (claves) & generar primo & no acotado & $O(b)$ candidatos $\times O(b\,M(b))$: $O(b^4)$ escolar & $O(b)$\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Costo amortizado.} La criba de Eratóstenes se calcula una sola vez al
+importar \texttt{primalidad.py} y se reutiliza en todos los candidatos y todas
+las claves, así que su costo por candidato es despreciable. La tabla de la
+ventana se recalcula en cada exponenciación: con $b = 2048$ y $k = 7$ son 64
+multiplicaciones frente a unas 2300 del recorrido, menos del 3\,\%.
+
+\paragraph{Por qué el TCR es hasta 4 veces más rápido.} El directo hace
+$\approx 1{,}5\,b$ multiplicaciones de $b$ bits. El TCR hace dos exponenciaciones
+de $\approx 1{,}5\cdot\frac b2$ multiplicaciones de $\frac b2$ bits: en total el
+mismo número de multiplicaciones, pero cada una cuesta $M(b/2) = M(b)/4$ con
+multiplicación escolar. La mejora teórica es 4 (3 con Karatsuba).
+
+\paragraph{Por qué la criba ahorra $\approx 85\,\%$ de Miller--Rabin.} Por el
+teorema de Mertens, la fracción de impares sin factores primos menores que 2000
+es $\prod_{3 \le p < 2000}(1 - 1/p) = 0{,}147$. Como con y sin criba se prueban
+los \emph{mismos} candidatos, la criba evita el $85{,}3\,\%$ de las llamadas.
+
+\paragraph{Espacio.} Todas las alternativas usan memoria $O(b)$ salvo la ventana,
+que guarda $2^{k-1}$ potencias de $b$ bits: con 2048 bits ($k = 7$) son 64
+números, unos 16\,KiB. El experimento E3 mide 21,6\,KiB de memoria pico frente a
+2,6\,KiB de la binaria.
+

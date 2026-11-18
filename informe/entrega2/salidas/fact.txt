@@ -1,0 +1,14 @@
+
+n = 3233  (12 bits)
+  tentativa  53 x 61                                       0.007 ms   [OK] producto = n y factores primos
+  rho        53 x 61                                       0.071 ms   [OK] producto = n y factores primos
+  brent      53 x 61                                       0.043 ms   [OK] producto = n y factores primos
+  los 3 métodos coinciden: sí [OK]
+
+n = 8051  (13 bits)
+  tentativa  83 x 97                                       0.004 ms   [OK] producto = n y factores primos
+  rho        83 x 97                                       0.052 ms   [OK] producto = n y factores primos
+  brent      83 x 97                                       0.093 ms   [OK] producto = n y factores primos
+  los 3 métodos coinciden: sí [OK]
+
+Resultado: todas las factorizaciones verificadas [OK]

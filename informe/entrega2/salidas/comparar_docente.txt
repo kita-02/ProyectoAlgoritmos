@@ -1,0 +1,21 @@
+$ python -m rsa_edu comparar primalidad 1000003
+alternativa                resultado                           ms     mult      div     iter
+division_tentativa         True                             0.037        0      334      166
+miller_rabin               True                             0.137      520        0      400
+miller_rabin_determinista  True                             0.063      312        0      240
+EQUIVALENTES: sí
+
+$ python -m rsa_edu comparar factorizacion 4294967297
+alternativa                resultado                           ms     mult      div     iter
+tentativa                  [641, 6700417]                   0.127        0      862      431
+rho                        [641, 6700417]                   0.221       84      562      590
+brent                      [641, 6700417]                   0.161       93      109      140
+EQUIVALENTES: sí
+
+$ python -m rsa_edu comparar factorizacion 600851475143
+alternativa                resultado                           ms     mult      div     iter
+tentativa                  [71, 839, 1471, 6857]            0.097        0      490      245
+rho                        [71, 839, 1471, 6857]            0.405      285     1441     1536
+brent                      [71, 839, 1471, 6857]            0.251      207      230      299
+EQUIVALENTES: sí
+

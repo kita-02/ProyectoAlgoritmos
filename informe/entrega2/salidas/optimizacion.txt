@@ -1,0 +1,38 @@
+==============================================================================
+ Pipeline RSA de 1024 bits: BASE frente a OPTIMIZADO
+ 10 mensajes, semilla 2026, mediana de 3 repeticiones
+==============================================================================
+ejecutando base        {'criba': False, 'crt': False, 'ventana': False} ...
+ejecutando optimizado  {'criba': True, 'crt': True, 'ventana': True} ...
+
+[1] ¿Ambas versiones hacen exactamente lo mismo?
+    misma clave (n, e, d)                            [OK]
+    mismos mensajes y mismos cifrados                [OK]
+    cifrados iguales a pow(m, e, n) de Python        [OK]
+    base recupera los 10 mensajes                    [OK]
+    optimizado recupera los 10 mensajes              [OK]
+    n = 12963348227738097205...  (1024 bits)   e = 65537
+
+[2] ¿Cuánto mejora cada etapa?
+    etapa            base (ms)  optim. (ms)   mejora   mult. base  mult. optim.
+    --------------------------------------------------------------------------
+    Generar claves      268.91        89.44    3.01x      184,377        58,758
+    Cifrar                0.63         0.61    1.03x          180           180
+    Descifrar            58.68        19.37    3.03x       15,290        12,140
+    --------------------------------------------------------------------------
+    TOTAL               328.21       109.41    3.00x      199,847        71,078
+    Nota: al generar claves, la criba agrega 14,965 divisiones entre primos < 2000;
+    son mucho más baratas que las multiplicaciones de 512 bits que evita.
+    Nota: al descifrar, la base multiplica números de 1024 bits y el TCR de 512 bits;
+    cada multiplicación del TCR cuesta ~4 veces menos, por eso el tiempo baja más que el conteo.
+
+[3] Dónde está cada optimización en el código
+    Generar claves : primalidad.generar_primo(..., criba=True) -> pasa_criba descarta
+                     candidatos con factores < 2000 antes de Miller-Rabin
+    Descifrar      : rsa.descifrar_crt -> dos exponenciaciones mod p y mod q
+                     (mitad de bits) + aritmetica.exp_modular_ventana
+    Cifrar         : igual en ambas (e = 65537 tiene 17 bits: no hay qué ahorrar)
+
+==============================================================================
+ RESULTADO: mismo resultado [OK]   pipeline 3.00 veces más rápido
+==============================================================================

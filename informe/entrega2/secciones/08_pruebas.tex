@@ -1,0 +1,194 @@
+% ================================================================== 8
+\section{Estrategia de pruebas}
+\label{sec:pruebas}
+
+\subsection{Organización de la batería de pruebas}
+
+La suite tiene \textbf{397 pruebas automatizadas} en 15 archivos, uno por
+componente. Todas pasan, con \textbf{94\,\%} de cobertura de líneas. Se ejecutan
+con \texttt{python -m pytest} y en GitHub Actions (Ubuntu y Windows, Python 3.10,
+3.12 y 3.13) en cada \emph{push}.
+
+\begin{table}[H]
+\centering\small
+\caption{Archivos de prueba, identificadores, casos y tipo de prueba.}
+\label{tab:archivos-prueba}
+\begin{tabularx}{\linewidth}{@{}l l r R{2.3cm} Y@{}}
+\toprule
+\textbf{Archivo} & \textbf{IDs} & \textbf{Casos} & \textbf{Tipo} & \textbf{Componente}\\
+\midrule
+\texttt{test\_aritmetica.py} & A1--A8 & 47 & Unitarias & mcd, Bézout, inverso, exponenciaciones, ventana, contador\\
+\texttt{test\_primalidad.py} & P1--P11 & 94 & Unitarias & división, Miller--Rabin, MR determinista, criba, \texttt{generar\_primo}\\
+\texttt{test\_factorizacion.py} & F1--F9 & 76 & Unitarias & división, Rho, Brent, \texttt{factorizar}, ataque\\
+\texttt{test\_rsa.py} & R1--R12 & 52 & Unitarias & claves manuales y FIPS 186-5, cifrado, descifrado, TCR, texto\\
+\texttt{test\_formatos.py} & R9 & 19 & Unitarias & instancias, claves y resultados (JSON, CSV)\\
+\texttt{test\_propiedades.py} & -- & 7 & Propiedades & Bézout, inverso, ida y vuelta RSA, factorización, primo determinista\\
+\texttt{test\_integracion.py} & I1--I6 & 21 & Integración & pipeline, CLI, entradas inválidas, scripts\\
+\texttt{test\_demo\_optimizacion.py} & I7 & 5 & Integración & base y optimizado dan el mismo resultado\\
+\texttt{test\_experimentos.py} & X1--X6 & 12 & Integración & formato, corrección y reproducibilidad del benchmark\\
+\texttt{test\_interfaz\_comun.py} & G1 & 16 & Unitarias & lectura de entradas y comparación de alternativas en la interfaz\\
+\texttt{test\_interfaz\_exponenciacion.py} & G2 & 9 & Unitarias & pestaña de exponenciación y paso a paso de la binaria\\
+\texttt{test\_interfaz\_primalidad.py} & G3 & 10 & Unitarias & pestaña de primalidad y generación de primos\\
+\texttt{test\_interfaz\_factorizacion.py} & G4 & 10 & Unitarias & pestaña de factorización y ataque\\
+\texttt{test\_interfaz\_rsa.py} & G5 & 9 & Unitarias & pestañas RSA y Optimización\\
+\texttt{test\_interfaz\_ventana.py} & G6 & 10 & Integración & la ventana completa: cada botón muestra el resultado correcto\\
+\midrule
+\textbf{Total} & & \textbf{397} & & \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Casos normales, límite, adversos, aleatorios y de referencia}
+
+\begin{table}[H]
+\centering
+\caption{Cobertura de cada componente por tipo de caso (identificadores de prueba).}
+\label{tab:bateria}
+\scriptsize
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\linewidth}{@{}R{1.9cm} Y Y Y Y Y@{}}
+\toprule
+\textbf{Componente} & \textbf{Normal} & \textbf{Límite} & \textbf{Adverso} & \textbf{Aleatorio con semilla} & \textbf{Referencia}\\
+\midrule
+Aritmética & A1--A3: $17^{-1}\bmod3120=2753$ & A4: exponente 0, módulo 1; A5: $k=1..8$ & A6: negativos, módulo $\le0$, $k$ inválido & Bézout e inverso (Hypothesis) & \texttt{pow} de Python; traza manual (A2)\\
+Primalidad & P5: primos conocidos & P2: $n\in\{0,1,2,3\}$; P11: límite $3{,}18\times10^{23}$ & P3: Carmichael; P4: pseudoprimos fuertes ($2047$, \dots) & P10: \texttt{generar\_primo} con semillas; Hypothesis & \textbf{exhaustiva}: $n\in[0,20\,000]$ frente a \texttt{sympy.isprime} (P1); P8: cota de $1/4$\\
+Factorización & F1: $3233$, $600\,851\,475\,143$ & F6: cuadrados de primos, potencias, $2^{61}-1$ & F7: $n\le0$, método desconocido, \texttt{max\_iter} agotado & F3: enteros de 60 bits; F5: semiprimos hasta 80 bits & \textbf{exhaustiva}: $[1,3000]$ frente a \texttt{sympy.factorint} (F2); cruzada (F4)\\
+RSA & R1: ejemplo manual; R3: ida y vuelta 16--2048 bits & R7: $m\in\{0,1,n-1\}$; R8: texto vacío & R10: $p=q$, $e$ no invertible, $m\ge n$, \texttt{True} & R4: claves FIPS reproducibles; Hypothesis & \textbf{exhaustiva}: los 3233 mensajes de la clave manual (R2)\\
+Formatos & R9: guardar y leer & R9: solo clave pública & R9: JSON mal formado, clave alterada & -- & valores conocidos\\
+Integración & I1: 6 configuraciones; I7 & I1: mensajes en el borde del rango & I4: entradas inválidas en la CLI & I1: misma clave con la misma semilla & \texttt{pow} y mensaje original\\
+Interfaz & G2--G5: ejemplo del informe en cada pestaña & G2: exponente 0, módulo 1; G3: $n \ge 2^{48}$ omite la división & G1: textos no numéricos; G5: $m \ge n$, criptograma vacío & G2--G4: números aleatorios con semilla & \texttt{pow} de Python; G6: ventana completa\\
+Experimentos & X1: formato de CSV & X5: carpeta sin datos & X5: experimento desconocido, configuración incompleta & X3: dos corridas, mismos conteos & X2: \texttt{sympy} y \texttt{pow} en cada fila\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\lstinputlisting[style=datos, caption={Salida de \texttt{python -m pytest --cov=rsa\_edu}.}]{salidas/pytest.txt}
+
+\subsection{Cómo se verifica que las salidas son correctas}
+
+Se hacen dos comparaciones con propósitos distintos:
+
+\begin{table}[H]
+\centering\small
+\caption{Qué se compara con qué.}
+\label{tab:comparaciones}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\linewidth}{@{}R{2.5cm} Y Y@{}}
+\toprule
+& \textbf{1. Corrección} & \textbf{2. Eficiencia (optimización)}\\
+\midrule
+Pregunta & ¿Nuestros algoritmos dan el resultado correcto? & ¿La segunda alternativa es más rápida que la primera?\\
+Se compara & Nuestro resultado contra una \textbf{implementación de referencia externa} y contra la definición & Nuestra primera alternativa contra nuestra segunda alternativa, sobre las mismas instancias\\
+Referencias & \texttt{pow(b, e, m)} de Python (en C), \texttt{sympy.isprime}, \texttt{sympy.factorint}, \texttt{gmpy2.powmod}; valores conocidos (ejemplo manual, Carmichael, pseudoprimos fuertes) & Contador de operaciones y tiempo medido\\
+Dónde & \texttt{tests/}, columna \texttt{ok} de cada experimento, demos & \texttt{benchmark.py}, \texttt{comparar}, \texttt{demo\_optimizacion.py}\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Los algoritmos de la biblioteca no usan estas referencias: \texttt{sympy} y
+\texttt{pow} con tres argumentos aparecen solo en pruebas, experimentos y demos.
+La única biblioteca externa que el sistema puede usar en su ejecución es
+\texttt{gmpy2}, de forma opcional en \texttt{pipeline.py}; la prueba I1 verifica
+que esa configuración produce la misma clave y los mismos cifrados que la
+nuestra. La eficiencia no se juzga contra una biblioteca escrita en C, porque la
+diferencia reflejaría el lenguaje y no el algoritmo; por eso las dos alternativas
+comparadas son implementaciones propias en las mismas condiciones.
+
+A estas comparaciones se suman otros tres mecanismos:
+\begin{itemize}
+  \item \textbf{Invariantes de salida}, que no necesitan oráculo (Tabla~\ref{tab:invariantes}).
+  \item \textbf{Pruebas basadas en propiedades (Hypothesis)}: se declara una
+        propiedad («para todo $m$: descifrar(cifrar($m$)) $= m$») y la herramienta
+        genera cientos de entradas y reduce cualquier fallo al contraejemplo mínimo.
+  \item \textbf{Verificación estadística} de los algoritmos probabilísticos: la
+        tasa de error de Miller--Rabin con una ronda queda bajo la cota de $1/4$ (P8).
+\end{itemize}
+
+\begin{table}[H]
+\centering\small
+\caption{Invariantes que se comprueban automáticamente.}
+\label{tab:invariantes}
+\begin{tabularx}{\textwidth}{@{}l Y@{}}
+\toprule
+\textbf{Módulo} & \textbf{Invariante}\\
+\midrule
+Euclides extendido & $a x + b y = g$, $g \mid a$ y $g \mid b$\\
+Inverso modular & $a \cdot a^{-1} \equiv 1 \pmod m$ y $0 < a^{-1} < m$\\
+Exponenciación & coincide con \texttt{pow}; la binaria hace a lo sumo $2\lfloor\log_2 e\rfloor + 1$ multiplicaciones; la ventana, menos\\
+Factorización & $\prod F = n$, todo $f \in F$ es primo y $F$ está ordenada\\
+Pollard Rho y Brent & si devuelve $d$, entonces $1 < d < n$ y $d \mid n$\\
+Claves & $n = pq$, $p \ne q$ primos, $e d \equiv 1 \pmod{\lambda(n)}$; las aleatorias cumplen FIPS 186-5\\
+Cifrado & $\textsc{Descifrar}(\textsc{Cifrar}(m)) = \textsc{DescifrarTCR}(\textsc{Cifrar}(m)) = m$\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Validación con la instancia resuelta a mano}
+
+La instancia de la Sección~\ref{sec:instancia} se reproduce exactamente. El
+script \texttt{scripts/traza\_instancia.py} muestra la tabla de Euclides
+extendido, la traza de la exponenciación y el descifrado por TCR, y compara cada
+valor con \texttt{pow}:
+
+\lstinputlisting[style=datos, caption={Salida de \texttt{python scripts/traza\_instancia.py}.}]{salidas/traza.txt}
+
+Durante la sesión se puede proponer cualquier instancia; el script verifica por
+sí mismo cada resultado, y rechaza las inválidas:
+
+\lstinputlisting[style=datos, caption={Salida de \texttt{python scripts/traza\_instancia.py --p 61 --q 51}.}]{salidas/inval1.txt}
+
+\subsection{Equivalencia entre alternativas}
+
+\lstinputlisting[style=datos, caption={Las alternativas de cada etapa sobre la misma instancia (\texttt{python -m rsa\_edu comparar}).}]{salidas/comparar.txt}
+
+\begin{table}[H]
+\centering\small
+\caption{Resultados de ambas alternativas sobre las mismas instancias.}
+\begin{tabularx}{\linewidth}{@{}l Y Y c@{}}
+\toprule
+\textbf{Instancia} & \textbf{Primera alternativa} & \textbf{Segunda alternativa} & \textbf{¿Coinciden?}\\
+\midrule
+$65^{17}\bmod3233$ & binaria: 2790 & ventana: 2790 & sí\\
+$561$, $2047$ & división: compuestos & MR y MR determinista: compuestos & sí\\
+$n=3233$ & división: $[53, 61]$ & Rho y Brent: $[53, 61]$ & sí\\
+$2^{32}+1$ & división: $[641, 6700417]$ & Rho y Brent: $[641, 6700417]$ & sí\\
+Descifrar $2790$ & directo: 65 & TCR: 65 & sí\\
+Primo de 512 bits, semilla 7 & sin criba: $12161158388\ldots$ & con criba: $12161158388\ldots$ & sí, el mismo\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering\small
+\caption{Diferencias observadas entre alternativas y su explicación.}
+\label{tab:diferencias}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{@{}R{4.3cm} Y R{2.6cm}@{}}
+\toprule
+\textbf{Diferencia} & \textbf{Explicación} & \textbf{Tipo}\\
+\midrule
+Binaria usa 6 multiplicaciones y ventana 5 ($e=17$) & El valor es el mismo; cambia el trabajo, que es lo que se mide. & Propiedad esperada\\
+Pollard Rho devuelve 53 o 61 según la semilla & Es aleatorizado; \texttt{factorizar} ordena la lista y el resultado final es idéntico. & Decisión de implementación\\
+MR con la sola base 2 declara primo a $2047=23\cdot89$ & $2047$ es pseudoprimo fuerte en base 2; con bases aleatorias o la base 3 se detecta. & Propiedad esperada\\
+$d=2753$ con $\varphi(n)$; $d=413$ con $\lambda(n)$ & $\lambda(n)$ divide a $\varphi(n)$; ambos descifran $2790\rightarrow65$. & Decisión (FIPS 186-5)\\
+Con $n=3233$ el TCR no es más rápido & Con claves diminutas pesa el costo fijo de reducir y recombinar; la ventaja aparece desde 512 bits. & Propiedad esperada\\
+Con $\le24$ bits la división de prueba gana a MR & $\sqrt n$ es pequeño y MR tiene un costo fijo de 20 rondas. & Propiedad esperada\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Ninguna diferencia corresponde a un error pendiente. La equivalencia se comprueba
+automáticamente en cada \emph{push} (pruebas P1, F2, F4, A4, R2, R6, I1 e I7).
+
+\subsection{Semillas y reproducibilidad}
+
+Todo lo aleatorio del proyecto usa una semilla fija (2026 por defecto): las
+instancias (\texttt{scripts/\allowbreak generar\_instancias.py}, que registra la semilla en
+el campo \texttt{meta} de cada archivo JSON), las configuraciones de los
+experimentos (\texttt{config/*.json}), las pruebas (\texttt{tests/conftest.py}) y
+las funciones de la biblioteca, que reciben el generador como parámetro
+(\texttt{rng}). Con la misma semilla se obtienen las mismas instancias, las
+mismas claves y los mismos conteos en cualquier computadora: regenerar las
+instancias produce archivos idénticos byte a byte, y las pruebas R4, X3 y la
+propiedad \texttt{test\_generar\_\allowbreak primo\_\allowbreak determinista} lo verifican.
+

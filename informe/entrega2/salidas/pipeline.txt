@@ -1,0 +1,18 @@
+$ python -m rsa_edu pipeline --bits 512 --mensajes 10
+configuración: 512b+criba
+n = 512 bits
+  claves          13.017 ms
+  cifrado          0.256 ms
+  descifrado      10.541 ms
+  operaciones: {'mult_mod': 28598, 'div_mod': 6312, 'mcd': 1, 'iteraciones': 19181}
+descifrado == mensaje en 10/10 mensajes -> OK
+
+$ python -m rsa_edu pipeline --bits 512 --mensajes 10 --crt --ventana
+configuración: 512b+criba+crt+ventana
+n = 512 bits
+  claves          13.056 ms
+  cifrado          0.321 ms
+  descifrado       4.493 ms
+  operaciones: {'mult_mod': 27278, 'div_mod': 6312, 'mcd': 1, 'iteraciones': 16621}
+descifrado == mensaje en 10/10 mensajes -> OK
+

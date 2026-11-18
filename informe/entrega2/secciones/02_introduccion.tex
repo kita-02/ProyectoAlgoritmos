@@ -1,0 +1,31 @@
+% ================================================================== 2
+\newpage
+\section{Introducción}
+\label{sec:introduccion}
+
+El tema asignado al grupo es la \textbf{biblioteca educativa de teoría de
+números y cifrado}, con el título \emph{«Optimización del pipeline de ejecución
+para el sistema criptográfico RSA»}. La biblioteca está dirigida a estudiantes
+que necesitan comprender los fundamentos matemáticos de RSA: en lugar de usarlo
+como caja negra, permite ejecutar cada algoritmo por separado, observar los
+valores intermedios y comparar el costo de distintas alternativas.
+
+RSA ejecuta un \emph{pipeline} de etapas: generar primos grandes, construir las
+claves, cifrar y descifrar. El problema es \textbf{determinar cuánto se reduce
+el costo de ese pipeline al reemplazar en cada etapa una alternativa base por
+una optimizada, sin alterar el resultado}. El objetivo es implementar y
+comparar experimentalmente ambas alternativas en cada etapa, verificar su
+corrección y contrastar los resultados con el análisis de complejidad.
+
+El alcance comprende la aritmética modular, las pruebas de primalidad, la
+factorización entera como ataque y el RSA educativo con claves según
+FIPS~186-5~\cite{fips186}. No incluye el relleno OAEP~\cite{rfc8017} ni el
+uso en producción.
+
+El documento presenta los fundamentos (Sección~\ref{sec:fundamentos}), el
+stack tecnológico (\ref{sec:stack}), la formulación (\ref{sec:formulacion}), el
+diseño algorítmico (\ref{sec:diseno-algoritmico}), el sistema
+(\ref{sec:sistema}), las pruebas (\ref{sec:pruebas}), la metodología
+experimental (\ref{sec:metodologia}), los resultados (\ref{sec:resultados}), la
+discusión (\ref{sec:discusion}), las conclusiones (\ref{sec:conclusiones}) y
+los anexos (\ref{sec:anexos}).

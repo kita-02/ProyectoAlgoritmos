@@ -1,0 +1,9 @@
+                     n |     División de prueba |      Miller-Rabin (r=20) |        MR determinista | Verificación
+-----------------------------------------------------------------------------------------------------------------------------
+                    61 |     primo       1.4 µs |     primo        63.6 µs |     primo      12.9 µs | OK
+                    53 |     primo       0.9 µs |     primo        41.4 µs |     primo      10.5 µs | OK
+                   561 | compuesto       0.5 µs | compuesto         8.6 µs | compuesto       3.7 µs | OK  (561 = 3 x 187)
+                  2047 | compuesto       1.2 µs | compuesto         7.0 µs | compuesto       5.7 µs | OK  (2047 = 23 x 89)
+                  3233 | compuesto       1.5 µs | compuesto         5.8 µs | compuesto       3.1 µs | OK  (3233 = 53 x 61)
+-----------------------------------------------------------------------------------------------------------------------------
+Resultado: los métodos coinciden en todos los casos [OK]

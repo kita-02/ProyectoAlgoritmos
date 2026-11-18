@@ -1,0 +1,45 @@
+================================================================
+ Instancia: p = 61, q = 53, e = 17, m = 65
+================================================================
+
+[1] Primalidad de p y q
+    p = 61: división de prueba -> True, Miller-Rabin -> True
+    q = 53: división de prueba -> True, Miller-Rabin -> True
+
+[2] Generación de claves
+    n = p*q = 3233    phi(n) = (p-1)(q-1) = 3120    e = 17
+
+    Euclides extendido (17, 3120):
+           q        a        b       x0       x1
+           -       17     3120        1        0
+           0     3120       17        0        1
+         183       17        9        1     -183
+           1        9        8     -183      184
+           1        8        1      184     -367
+           8        1        0     -367     3120
+
+    d = e^-1 mod phi(n) = 2753
+    verificación: pow(e, -1, phi) = 2753  [OK]   e*d mod phi = 1  [OK]
+
+[3] Cifrado: c = m^e mod n = 65^17 mod 3233
+    e = 17 = 10001 (binario), se recorre de derecha a izquierda
+     it bit    r antes       base  r después
+      1   1          1         65         65
+      2   0         65        992         65
+      3   0         65       1232         65
+      4   0         65       1547         65
+      5   1         65        789       2790
+    c = 2790     verificación: pow(m, e, n) = 2790  [OK]
+
+[4] Descifrado: m' = c^d mod n = 2790^2753 mod 3233
+    m' = 65
+
+[5] Descifrado por el Teorema Chino del Resto (segunda alternativa)
+    dp = d mod (p-1) = 53    dq = d mod (q-1) = 49    qinv = q^-1 mod p = 38
+    m1 = c^dp mod p = 4    m2 = c^dq mod q = 12
+    h = qinv (m1 - m2) mod p = 1    m = m2 + h q = 65
+    descifrar_crt -> 65   igual al descifrado directo [OK]
+
+================================================================
+ RESULTADO: m' = 65  =  m = 65   [OK]
+================================================================

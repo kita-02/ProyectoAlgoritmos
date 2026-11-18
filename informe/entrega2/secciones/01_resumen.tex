@@ -1,0 +1,33 @@
+% ================================================================== 1
+\section{Resumen}
+\label{sec:resumen}
+
+RSA se construye sobre tres problemas de teoría de números: decidir si un
+número es primo (para generar las claves), calcular potencias modulares
+grandes (para cifrar y descifrar) y factorizar enteros (el ataque del que
+depende su seguridad). Cada uno admite algoritmos con costos muy distintos. El
+proyecto desarrolla una biblioteca educativa en Python, \texttt{rsa\_edu}, que
+implementa desde cero, para cada etapa del pipeline RSA, una alternativa base y
+una alternativa optimizada, y mide si la optimizada hace el sistema más rápido
+sin cambiar el resultado.
+
+Se comparan la exponenciación binaria con la ventana deslizante; la división
+de prueba con Miller--Rabin (aleatorio y determinista); la generación de primos
+con y sin criba de primos pequeños; el descifrado directo con el Teorema Chino
+del Resto; y, para el ataque, la división de prueba con Pollard Rho con
+detección de ciclos de Floyd y de Brent. Las claves siguen FIPS~186-5 y las
+primitivas de cifrado PKCS~\#1~v2.2. La corrección se verifica con 397 pruebas
+automatizadas (94\,\% de cobertura) contra referencias externas (\texttt{pow}
+de Python y \texttt{sympy}), y la eficiencia con un diseño experimental
+reproducible (semilla fija) que mide tiempo, operaciones y memoria.
+
+Las mediciones coinciden con el análisis de complejidad: la división de prueba
+crece como $O(\sqrt n)$ y Pollard Rho como $O(n^{1/4})$; la ventana reduce las
+multiplicaciones de $1{,}5$ a $1{,}18$ por bit del exponente; la criba evita el
+83\,\% de las pruebas de Miller--Rabin (la teoría predice 85\,\%); y el
+descifrado por TCR es de 2,3 a 3,3 veces más rápido. Con la misma clave y los
+mismos cifrados, el pipeline RSA optimizado es 3,1 veces más rápido con claves
+de 512 bits y 5,8 veces con 2048 bits. Optimizar la generación de primos y el
+descifrado reduce el costo total de RSA entre 3 y 6 veces, y la mejora crece
+con el tamaño de la clave; el cifrado con $e = 65537$ ya es barato y no se
+beneficia.

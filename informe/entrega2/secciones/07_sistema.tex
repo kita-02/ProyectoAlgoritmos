@@ -1,0 +1,150 @@
+% ================================================================== 7
+\section{Diseño e implementación del sistema}
+\label{sec:sistema}
+
+\subsection{Arquitectura}
+
+La biblioteca se organiza en capas: cada módulo solo depende de módulos de
+capas inferiores, lo que permite probar y medir cada algoritmo por separado. El
+núcleo (\texttt{src/rsa\_edu/}) usa solo la biblioteca estándar de Python; las
+dependencias externas se usan únicamente en pruebas y experimentos. El usuario
+trabaja con la interfaz gráfica (\texttt{rsa\_edu.interfaz}) o con la línea de
+comandos; ambas llaman a las mismas funciones de la biblioteca.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=7mm and 6mm]
+  \node[mod=gris, minimum width=3.4cm] (cli) {\texttt{interfaz/} (ventana)\\ \texttt{\_\_main\_\_} (CLI)};
+  \node[mod=gris, minimum width=3.4cm, right=of cli] (scripts)
+       {\texttt{scripts/}\\ \footnotesize instancias, benchmark,\\[-1pt]\footnotesize gráficos, demos};
+  \node[mod=gris, minimum width=3.4cm, right=of scripts] (tests)
+       {\texttt{tests/}\\ \footnotesize pytest + Hypothesis};
+  \node[mod=naranja, minimum width=5.6cm, below=12mm of scripts, xshift=-2.4cm] (rsa)
+       {\texttt{rsa.py} \ \texttt{pipeline.py}\\ \footnotesize claves FIPS 186-5, cifrado, descifrado directo / TCR};
+  \node[mod=verde, minimum width=3.3cm, right=8mm of rsa] (fmt)
+       {\texttt{formatos.py}\\ \footnotesize JSON / CSV};
+  \node[mod, minimum width=4.4cm, below=12mm of rsa, xshift=-1.6cm] (prim)
+       {\texttt{primalidad.py}\\ \footnotesize división, MR, MR determinista, criba};
+  \node[mod, minimum width=4.4cm, right=6mm of prim] (fact)
+       {\texttt{factorizacion.py} \ \texttt{ataque.py}\\ \footnotesize división, Rho (Floyd), Brent};
+  \node[mod, minimum width=9.2cm, below=12mm of prim, xshift=2.4cm] (arit)
+       {\texttt{aritmetica.py}\\ \footnotesize mcd, Euclides extendido, inverso, exponenciación ingenua / binaria / ventana};
+  \node[mod=gris, minimum width=2.6cm, right=6mm of arit] (cont) {\texttt{contador.py}};
+
+  \draw[flecha] (cli) -- (rsa);
+  \draw[flecha] (cli.south) |- ($(prim.north)+(0,5mm)$) -- (prim.north);
+  \draw[flecha] (scripts) -- (rsa);
+  \draw[flecha] (scripts) -- (fmt);
+  \draw[flecha] (tests.south) -- (fmt.north east);
+  \draw[flecha] (rsa) -- (prim);
+  \draw[flecha] (fmt) -- (rsa);
+  \draw[flecha] (rsa.south east) -- (fact.north);
+  \draw[flecha] (fact) -- (prim);
+  \draw[flecha] (prim) -- (prim |- arit.north);
+  \draw[flecha] (fact) -- (fact |- arit.north);
+  \draw[flecha] (arit) -- (cont);
+\end{tikzpicture}
+\caption{Arquitectura en capas de \texttt{rsa\_edu}. Las flechas indican
+«depende de». Gris: interfaz y soporte; naranja: aplicación integradora;
+azul: algoritmos; verde: entrada/salida.}
+\label{fig:arquitectura}
+\end{figure}
+
+\subsection{Módulos}
+
+\begin{table}[H]
+\centering\small
+\caption{Módulos, responsables y funciones públicas (versión 0.2.0).}
+\label{tab:modulos}
+\begin{tabularx}{\textwidth}{@{}l l Y@{}}
+\toprule
+\textbf{Módulo} & \textbf{Resp.} & \textbf{Funciones principales}\\
+\midrule
+\texttt{aritmetica} & Francesco & \texttt{mcd}, \texttt{mcm}, \texttt{euclides\_extendido}, \texttt{inverso\_modular}, \texttt{exp\_modular\_ingenua}, \texttt{exp\_modular\_rapida}, \texttt{exp\_modular\_ventana}, \texttt{ventana\_optima}\\
+\texttt{contador} & Francesco & \texttt{Contador} (multiplicaciones, divisiones, mcd, iteraciones)\\
+\texttt{primalidad} & Orlando & \texttt{division\_tentativa}, \texttt{miller\_rabin}, \texttt{miller\_rabin\_determinista}, \texttt{es\_primo}, \texttt{es\_testigo}, \texttt{criba\_eratostenes}, \texttt{pasa\_criba}, \texttt{generar\_primo}\\
+\texttt{factorizacion} & Camila & \texttt{factorizar\_tentativa}, \texttt{pollard\_rho}, \texttt{pollard\_rho\_brent}, \texttt{factorizar} (fachada)\\
+\texttt{ataque} & Camila & \texttt{romper\_clave}: factoriza $n$ y recupera $d$\\
+\texttt{rsa} & Emmi & \texttt{generar\_claves}, \texttt{generar\_claves\_aleatorias}, \texttt{elegir\_e}, \texttt{lambda\_carmichael}, \texttt{cifrar}, \texttt{descifrar}, \texttt{descifrar\_crt}, \texttt{cifrar\_texto}, \texttt{descifrar\_texto}\\
+\texttt{pipeline} & Emmi & \texttt{ConfigPipeline}, \texttt{ejecutar\_pipeline}, \texttt{configuraciones\_estandar}\\
+\texttt{formatos} & Emmi & \texttt{cargar\_instancias}, \texttt{guardar\_instancias}, \texttt{cargar\_claves}, \texttt{guardar\_claves}, \texttt{escribir\_resultados}, \texttt{leer\_resultados}\\
+\texttt{\_\_main\_\_} & Emmi & CLI: \texttt{primo}, \texttt{factorizar}, \texttt{claves}, \texttt{cifrar}, \texttt{descifrar}, \texttt{atacar}, \texttt{comparar}, \texttt{pipeline}, \texttt{interfaz}\\
+\texttt{interfaz} & Todos & Ventana con cinco pestañas: RSA y Optimización (Emmi), Exponenciación modular (Francesco), Primalidad (Orlando), Factorización y ataque (Camila); \texttt{comun} y \texttt{componentes} (Emmi)\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Formatos de archivos}
+
+En JSON, los enteros grandes se guardan como \emph{cadenas decimales}; todo
+archivo incluye un campo \texttt{version} y se \textbf{valida al cargarse}
+(campos obligatorios, coherencia entre \texttt{n} y \texttt{bits}, consistencia
+de la clave: $n = pq$ y $e\,d \equiv 1 \pmod{\lambda(n)}$).
+
+\begin{lstlisting}[style=datos, caption={Instancias (\texttt{data/instancias/semiprimos.json}, extracto real).}]
+{"version": 1,
+ "meta": {"tipo": "semiprimo_balanceado",
+          "generador": "scripts/generar_instancias.py --semilla 2026", "semilla": 2026},
+ "instancias": [{"n": "47561", "bits": 16, "p": "199", "q": "239"}, ...]}
+\end{lstlisting}
+
+\begin{lstlisting}[style=datos, caption={Par de claves (\texttt{clave.json}, generado por la CLI).}]
+{"version": 1, "tipo": "rsa-edu",
+ "publica": {"n": "3233", "e": "17"},
+ "privada": {"d": "2753", "p": "61", "q": "53"}}
+\end{lstlisting}
+
+\begin{lstlisting}[style=datos, caption={Resultados (\texttt{resultados/<configuración>/E1.csv} \dots{} \texttt{E6.csv}): columnas.}]
+experimento,algoritmo,etapa,instancia,bits,repeticiones,
+ms_mediana,ms_min,ms_max,cv,mult_mod,div_mod,mcd,iteraciones,
+kib_pico,extra,ok,estable
+\end{lstlisting}
+
+\subsection{Dependencias}
+
+\begin{table}[H]
+\centering\small
+\caption{Dependencias (\texttt{requirements.txt}). El núcleo no requiere ninguna.}
+\begin{tabularx}{\textwidth}{@{}l l Y@{}}
+\toprule
+\textbf{Paquete} & \textbf{Versión mínima} & \textbf{Uso}\\
+\midrule
+Python & 3.10 & Lenguaje (probado con 3.10, 3.12 y 3.13 en Linux y Windows)\\
+tkinter & incluido en Python & Interfaz gráfica\\
+pytest, pytest-cov & 8.0, 5.0 & Pruebas y cobertura\\
+hypothesis & 6.100 & Pruebas basadas en propiedades\\
+sympy & 1.12 & Oráculo de referencia en pruebas y experimentos\\
+pandas, matplotlib & 2.0, 3.7 & Tablas y figuras de resultados\\
+gmpy2 (opcional) & 2.1 & Prototipo y \emph{backend} opcional del pipeline\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Decisiones técnicas}
+
+\begin{table}[H]
+\centering\small
+\caption{Cambios introducidos al implementar.}
+\label{tab:cambios}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{@{}R{3.4cm} R{4.2cm} Y@{}}
+\toprule
+\textbf{Diseño inicial} & \textbf{Implementado} & \textbf{Motivo}\\
+\midrule
+Pollard Rho sin límite & \texttt{max\_iter} y \texttt{max\_reintentos} & Con factores grandes podía no terminar; ahora lanza \texttt{RuntimeError} con un mensaje claro.\\
+Rho aplicado a cualquier $n$ & Se detectan antes $n$ par y $n$ cuadrado perfecto & Para $n=r^2$ el mcd da $n$ con mucha frecuencia.\\
+Recursión sobre los cofactores & Pila explícita & Evita el límite de recursión de Python.\\
+Cofactores con MR aleatorio & \texttt{es\_primo}: MR determinista bajo $3{,}18\times10^{23}$ & Exacto y más rápido en ese rango.\\
+$d$ siempre con $\varphi(n)$ & $\varphi(n)$ en claves manuales; $\lambda(n)$ en aleatorias & FIPS 186-5 (Tabla~\ref{tab:estandares}).\\
+\texttt{generar\_primo} en \texttt{rsa.py} & Movido a \texttt{primalidad.py} con criba opcional & Pertenece a la capa de primalidad; permite comparar con y sin criba.\\
+Una sola semilla para todo & Generador derivado para las bases de MR & Con y sin criba se obtiene el mismo primo: comparación justa.\\
+Medición solo con tiempo & Parámetro opcional \texttt{cont} & Comparar por operaciones, independiente del hardware.\\
+Experimentos E1--E4 & E1--E6 (se agregan criba y pipeline completo) & Responder directamente si se optimiza el RSA completo.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Otras decisiones: \texttt{\_\_init\_\_.py} no reexporta funciones, para que cada
+integrante pueda subir su módulo sin romper las importaciones de los demás;
+todas las funciones validan tipos y rangos (\texttt{bool} se rechaza
+explícitamente, porque en Python es subclase de \texttt{int}).

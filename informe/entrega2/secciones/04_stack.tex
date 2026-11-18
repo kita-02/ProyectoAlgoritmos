@@ -1,0 +1,113 @@
+% ================================================================== 4
+\section{Evaluación y selección del stack tecnológico}
+\label{sec:stack}
+
+\subsection{Alternativas consideradas}
+
+\begin{table}[H]
+\centering\small
+\caption{Herramientas candidatas por necesidad, selección y estado en la Entrega~2.}
+\label{tab:herramientas}
+\begin{tabularx}{\textwidth}{@{}l R{3.3cm} Y R{2.4cm}@{}}
+\toprule
+\textbf{Necesidad} & \textbf{Candidatas} & \textbf{Selección y motivo} & \textbf{Estado}\\
+\midrule
+Lenguaje & Python, C++, Rust & \textbf{Python}: \texttt{int} de precisión arbitraria nativo (C2, C5). & En uso (3.10--3.13)\\
+Enteros grandes & \texttt{int} nativo, \textbf{gmpy2} (GMP), python-flint & \texttt{int} para el núcleo (C2); \textbf{gmpy2} como tecnología emergente \emph{opcional}. & Integrado (opcional)\\
+Oráculo & SymPy, PARI/GP, SageMath & \textbf{SymPy}: se instala con \texttt{pip} (C3). & En pruebas y experimentos\\
+Pruebas & unittest, \textbf{pytest}, \textbf{Hypothesis} & \textbf{pytest} (fixtures, parametrización) + \textbf{Hypothesis} (pruebas por propiedades). & 397 pruebas\\
+Medición & \texttt{timeit}, pytest-benchmark, \texttt{perf\_counter} + \texttt{tracemalloc} & Script propio: control total de métricas y salida CSV. & \texttt{benchmark.py}\\
+Análisis y gráficos & pandas, matplotlib, seaborn & \textbf{pandas + matplotlib}: PDF vectorial para LaTeX. & \texttt{graficar.py}\\
+Aleatoriedad & \texttt{random}, \texttt{secrets} & \texttt{random.Random(semilla)} en experimentos y pruebas. & En uso\\
+Interfaz gráfica & \textbf{Tkinter}, PyQt, Streamlit & \textbf{Tkinter}: viene con Python, no requiere instalar nada más (C3, C5). & 5 pestañas\\
+Versiones / CI & Git + GitHub, GitHub Actions & Git + GitHub; \textbf{GitHub Actions} ejecuta las pruebas en cada \emph{push}. & Activo\\
+Documentación & LaTeX (Overleaf), Markdown & LaTeX para informes; Markdown para README y documentación técnica. & En uso\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Criterios de comparación}
+
+\begin{enumerate}
+  \item[C1] \textbf{Pertinencia} para el problema (¿resuelve una necesidad real del proyecto?).
+  \item[C2] \textbf{Valor educativo}: no debe ocultar los algoritmos que el curso exige implementar.
+  \item[C3] \textbf{Reproducibilidad y portabilidad}: instalación con \texttt{pip}, sin compilar ni rutas absolutas, en Linux y Windows.
+  \item[C4] \textbf{Madurez y documentación} oficial.
+  \item[C5] \textbf{Curva de aprendizaje} para el equipo en el tiempo del semestre.
+  \item[C6] \textbf{Rendimiento}, cuando la herramienta participa en las mediciones.
+\end{enumerate}
+
+\subsection{Tecnología seleccionada y justificación}
+
+La decisión técnica más relevante es la aritmética de enteros grandes, porque
+afecta directamente a las mediciones. Valoración del grupo (1 = malo,
+5 = excelente), ponderada:
+
+\begin{table}[H]
+\centering\small
+\caption{Matriz de decisión ponderada para la aritmética de enteros grandes.}
+\label{tab:decision}
+\begin{tabular}{@{}l c c c c@{}}
+\toprule
+\textbf{Criterio} & \textbf{Peso} & \texttt{int} nativo & \texttt{gmpy2} & \texttt{python-flint}\\
+\midrule
+C2 Valor educativo (algoritmo visible) & 0,30 & 5 & 3 & 2\\
+C3 Reproducibilidad / instalación & 0,20 & 5 & 4 & 3\\
+C4 Madurez y documentación & 0,15 & 5 & 4 & 3\\
+C5 Curva de aprendizaje & 0,15 & 5 & 4 & 2\\
+C6 Rendimiento & 0,20 & 2 & 5 & 5\\
+\midrule
+\textbf{Puntaje ponderado} & 1,00 & \textbf{4,40} & 3,90 & 2,95\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Decisión:} el núcleo usa \texttt{int} nativo. \texttt{gmpy2}
+se integró como \emph{backend opcional} del pipeline (\texttt{--gmpy2}) y en un
+prototipo comparativo: el código funciona sin él y sirve para separar el costo
+\emph{algorítmico} del costo \emph{de implementación}. La decisión se confirmó
+con los datos: \texttt{gmpy2} es unas 12 veces más rápido que nuestras
+exponenciaciones (\texttt{scripts/prototipo\_gmpy2.py}), pero ocultaría el algoritmo,
+que es lo que el proyecto estudia.
+
+\subsection{Procedimiento de aprendizaje e integración}
+
+\begin{table}[H]
+\centering\small
+\caption{Cómo se aprendió e integró cada herramienta.}
+\begin{tabularx}{\textwidth}{@{}l Y Y@{}}
+\toprule
+\textbf{Herramienta} & \textbf{Aprendizaje} & \textbf{Integración y evidencia}\\
+\midrule
+pytest & Documentación oficial; pruebas parametrizadas y \emph{fixtures} con semilla fija & \texttt{pytest.ini} (\texttt{pythonpath = src tests}); un archivo por componente\\
+Hypothesis & Documentación y artículo~\cite{hypothesis}; estrategias \texttt{integers} y \texttt{settings} & \texttt{tests/\allowbreak test\_propiedades.py}: Bézout, inverso, ida y vuelta RSA, primo determinista\\
+SymPy & Funciones \texttt{isprime} y \texttt{factorint} como oráculo & Pruebas P1, F2 y columna \texttt{ok} de los experimentos; nunca dentro de \texttt{src/}\\
+gmpy2 & Comparar \texttt{powmod} con \texttt{pow} y con la implementación propia & \texttt{prototipo\_gmpy2.py}; \texttt{ConfigPipeline\allowbreak(gmpy2=True)}; prueba I1\\
+GitHub Actions & Sintaxis de \emph{workflows} y matrices de versiones & \texttt{.github/\allowbreak workflows/\allowbreak pruebas.yml}: Ubuntu y Windows, Python 3.10, 3.12 y 3.13\\
+\texttt{tracemalloc}, \texttt{perf\_counter}, \texttt{gc} & Documentación de Python; separar conteo y cronometraje & \texttt{benchmark.medir}\\
+pandas, matplotlib & Tablas dinámicas y gráficos vectoriales & \texttt{graficar.py}, \texttt{ajuste\_complejidad.py}\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Dificultades de adopción y soluciones aplicadas}
+
+\begin{table}[H]
+\centering\small
+\caption{Dificultades encontradas al adoptar las herramientas.}
+\label{tab:dificultades-stack}
+\begin{tabularx}{\textwidth}{@{}R{4.6cm} Y@{}}
+\toprule
+\textbf{Dificultad} & \textbf{Solución}\\
+\midrule
+Tildes y símbolos mal mostrados en la consola de Windows & La CLI y los scripts fuerzan la salida en UTF-8 (\texttt{sys.stdout.reconfigure}).\\
+En Windows, \texttt{python} o \texttt{pip} no se reconocen & Instalar Python marcando \emph{Add python.exe to PATH}; usar \texttt{py -m pip}.\\
+PowerShell bloquea la activación del entorno virtual & \texttt{Set-ExecutionPolicy} \texttt{-Scope CurrentUser} \texttt{RemoteSigned}, o trabajar sin entorno virtual con \texttt{py -m}.\\
+\texttt{pip install -e} sin el punto final & El comando correcto es \texttt{py -m pip install -e .} (instala el proyecto de la carpeta actual).\\
+Contador de operaciones alteraba los tiempos medidos & Conteo en una ejecución aparte; cronometraje sin contador y con el recolector de basura desactivado.\\
+\texttt{tracemalloc} hace muy lenta la ejecución & Se usa solo en la ejecución de conteo, nunca en las cronometradas.\\
+Hypothesis marcaba pruebas lentas como fallidas & \texttt{settings(deadline=None)} en las pruebas con enteros grandes.\\
+\texttt{gmpy2} puede no instalarse en algunas versiones de Python & Es opcional: el proyecto y las pruebas funcionan sin él.\\
+\bottomrule
+\end{tabularx}
+\end{table}

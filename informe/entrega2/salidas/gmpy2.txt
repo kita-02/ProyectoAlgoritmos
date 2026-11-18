@@ -1,0 +1,8 @@
+gmpy2: versión 2.3.2
+  bits   k  mult. binaria  mult. ventana  binaria ms  ventana ms    pow ms  gmpy2 ms  verificación
+--------------------------------------------------------------------------------------------------------
+   512   5            742            604       1.020       0.828     0.712     0.077  [OK] los resultados coinciden
+  1024   6          1,551          1,200       5.645       4.197     4.009     0.468  [OK] los resultados coinciden
+  2048   7          3,047          2,362      36.516      32.453    31.568     3.120  [OK] los resultados coinciden
+--------------------------------------------------------------------------------------------------------
+Resultado: todas las implementaciones coinciden [OK]

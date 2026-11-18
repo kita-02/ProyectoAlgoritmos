@@ -1,0 +1,12 @@
+================================================================
+ Instancia: p = 61, q = 51, e = automático, m = 65
+================================================================
+
+[1] Primalidad de p y q
+    p = 61: división de prueba -> True, Miller-Rabin -> True
+    q = 51: división de prueba -> False, Miller-Rabin -> False
+
+[2] Generación de claves
+    ERROR: q = 51 no es primo
+
+Resultado: instancia rechazada correctamente (entrada inválida).

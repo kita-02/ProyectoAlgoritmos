@@ -1,0 +1,207 @@
+\documentclass[11pt,a4paper]{article}
+% =====================================================================
+% Informe de la Entrega 2 -- Grupo 6
+% Estructura del informe final (sección 9 de la descripción del proyecto).
+%
+% Compilar:  latexmk -pdf Informe_Entrega2_Grupo6.tex   (o subir la carpeta a Overleaf)
+% Dentro del repositorio usa ../../src/rsa_edu y ../../resultados/preliminar/figuras;
+% fuera de él, las copias de las carpetas codigo/ y figuras/.
+% Logo: colocar figuras/logo_unsaac.png (si no está, la portada se compila sin él).
+% =====================================================================
+
+% ------------------------------------------------------------------ paquetes
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,provide=*]{babel}
+\usepackage{mathptmx}
+\usepackage[scaled=0.92]{helvet}
+\usepackage{courier}
+\usepackage{microtype}
+\DisableLigatures[-]{encoding=T1,family=tt*} % que --metodo no se convierta en guion largo
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs,tabularx,multirow,array,longtable,makecell}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{caption,subcaption}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric,fit,backgrounds,calc}
+\usepackage{fancyhdr}
+\usepackage{needspace}
+\usepackage[most]{tcolorbox}
+\usepackage[hidelinks]{hyperref}
+\urlstyle{same}
+
+\definecolor{azul}{HTML}{2A78D6}
+\definecolor{naranja}{HTML}{EB6834}
+\definecolor{verde}{HTML}{1BAF7A}
+\definecolor{gris}{HTML}{52514E}
+\definecolor{fondo}{HTML}{F6F6F4}
+\definecolor{grisclaro}{HTML}{E4E3DF}
+
+\captionsetup{font=small,labelfont=bf}
+\setlist{nosep,leftmargin=*}
+\renewcommand{\arraystretch}{1.15}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{R}[1]{>{\raggedright\arraybackslash}p{#1}}
+\setlength{\emergencystretch}{3em}
+% Permitir cortes de línea después de los guiones bajos de nombres de archivos y funciones.
+\let\guionbajo\_
+\renewcommand{\_}{\guionbajo\allowbreak}
+
+\newcommand{\estado}[1]{\textsf{\small[#1]}}
+
+% ------------------------------------------------------------------ pseudocódigo en español
+\floatname{algorithm}{Algoritmo}
+\algrenewcommand\algorithmicrequire{\textbf{Entrada:}}
+\algrenewcommand\algorithmicensure{\textbf{Salida:}}
+\algrenewcommand\algorithmicwhile{\textbf{mientras}}
+\algrenewcommand\algorithmicdo{\textbf{hacer}}
+\algrenewcommand\algorithmicfor{\textbf{para}}
+\algrenewcommand\algorithmicforall{\textbf{para cada}}
+\algrenewcommand\algorithmicif{\textbf{si}}
+\algrenewcommand\algorithmicthen{\textbf{entonces}}
+\algrenewcommand\algorithmicelse{\textbf{si no}}
+\algrenewcommand\algorithmicreturn{\textbf{devolver}}
+\algrenewcommand\algorithmicfunction{\textbf{función}}
+\algrenewcommand\algorithmicrepeat{\textbf{repetir}}
+\algrenewcommand\algorithmicuntil{\textbf{hasta que}}
+\algnewcommand\Break{\textbf{salir del bucle}}
+\algnewcommand\Continue{\textbf{continuar}}
+\algnewcommand\Error[1]{\textbf{error}(\textit{#1})}
+\algrenewcommand\alglinenumber[1]{\scriptsize #1:}
+\newcommand{\Mod}{\bmod}
+
+% ------------------------------------------------------------------ código y salidas
+\lstdefinestyle{py}{
+  language=Python,
+  basicstyle=\ttfamily\scriptsize,
+  keywordstyle=\color{azul}\bfseries,
+  commentstyle=\color{gris}\itshape,
+  stringstyle=\color{naranja!80!black},
+  numbers=left, numberstyle=\tiny\color{gris}, numbersep=6pt,
+  backgroundcolor=\color{fondo}, frame=single, rulecolor=\color{grisclaro},
+  xleftmargin=2.2em, framexleftmargin=1.8em,
+  breaklines=true, breakatwhitespace=true, showstringspaces=false,
+  columns=fullflexible, keepspaces=true, tabsize=4,
+  extendedchars=true, inputencoding=utf8,
+  literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+           {ñ}{{\~n}}1 {Á}{{\'A}}1 {É}{{\'E}}1 {Ó}{{\'O}}1 {Ñ}{{\~N}}1
+           {–}{{--}}1 {≤}{{$\le$}}1 {·}{{$\cdot$}}1 {×}{{$\times$}}1
+           {¿}{{?`}}1 {¡}{{!`}}1 {ü}{{\"u}}1 {Í}{{\'I}}1 {Ú}{{\'U}}1
+}
+\lstdefinestyle{datos}{
+  language={}, numbers=none, basicstyle=\ttfamily\scriptsize, backgroundcolor=\color{fondo},
+  frame=single, rulecolor=\color{grisclaro}, columns=fullflexible,
+  keepspaces=true, breaklines=false, showstringspaces=false,
+  extendedchars=true, inputencoding=utf8,
+  literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1 {ñ}{{\~n}}1
+           {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1 {Ñ}{{\~N}}1
+           {├}{{|}}1 {└}{{`}}1 {─}{{-}}1 {│}{{|}}1 {µ}{{$\mu$}}1 {×}{{$\times$}}1
+           {≤}{{$\le$}}1 {·}{{$\cdot$}}1 {¿}{{?`}}1 {¡}{{!`}}1 {ü}{{\"u}}1
+}
+\lstdefinestyle{datosancho}{style=datos, basicstyle=\ttfamily\fontsize{5.6}{6.6}\selectfont}
+\lstset{style=py}
+\renewcommand{\lstlistingname}{Código}
+
+% Rutas: dentro del repositorio o como carpeta independiente.
+\IfFileExists{../../src/rsa_edu/rsa.py}
+  {\newcommand{\src}{../../src/rsa_edu}\newcommand{\figs}{../../resultados/preliminar/figuras}}
+  {\newcommand{\src}{codigo}\newcommand{\figs}{figuras}}
+\newcommand{\codigo}[4]{\lstinputlisting[style=py,firstline=#2,lastline=#3,firstnumber=#2,
+  caption={#4}]{\src/#1}}
+
+% ------------------------------------------------------------------ encabezados
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small UNSAAC -- Ingeniería Informática y de Sistemas}
+\fancyhead[R]{\small Algoritmos Avanzados -- Entrega 2}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\setlength{\headheight}{14pt}
+
+% Títulos de sección: no quedar solos al pie de una página.
+\makeatletter
+\renewcommand\section{\@startsection{section}{1}{\z@}%
+  {-3.5ex \@plus -1ex \@minus -.2ex}{2.3ex \@plus.2ex}%
+  {\needspace{8\baselineskip}\normalfont\Large\bfseries}}
+\renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
+  {-3.25ex\@plus -1ex \@minus -.2ex}{1.5ex \@plus .2ex}%
+  {\needspace{5\baselineskip}\normalfont\large\bfseries}}
+\makeatother
+
+% ------------------------------------------------------------------ TikZ
+\tikzset{
+  mod/.style={draw=#1, fill=#1!8, rounded corners=3pt, thick, align=center,
+              font=\small, minimum height=9mm, inner sep=4pt},
+  mod/.default=azul,
+  dato/.style={draw=gris, fill=white, align=center, font=\small,
+               shape=rectangle, minimum height=8mm, inner sep=3pt},
+  flecha/.style={-{Stealth[length=2.2mm]}, thick, gris},
+}
+
+\begin{document}
+\renewcommand{\tablename}{Tabla}
+\renewcommand{\listtablename}{Índice de tablas}
+
+% ================================================================== PORTADA
+\begin{titlepage}
+\thispagestyle{empty}
+\centering
+{\large UNIVERSIDAD NACIONAL DE SAN ANTONIO ABAD DEL CUSCO\par}
+\vspace{2mm}
+{\large FACULTAD DE INGENIERÍA ELÉCTRICA, ELECTRÓNICA, INFORMÁTICA Y MECÁNICA\par}
+\vspace{2mm}
+{\large INGENIERÍA INFORMÁTICA Y DE SISTEMAS\par}
+\vspace{1.2cm}
+\IfFileExists{figuras/logo_unsaac.png}{\includegraphics[height=5.2cm]{figuras/logo_unsaac.png}\par\vspace{1.2cm}}{\vspace{2.5cm}}
+{\LARGE Algoritmos Avanzados -- Proyecto Semestral\par}
+\vspace{6mm}
+{\Large ENTREGA 2\par}
+\vspace{2mm}
+{\large IMPLEMENTACIÓN, PRUEBAS, ANÁLISIS DE COMPLEJIDAD\\ Y EXPERIMENTOS PRELIMINARES\par}
+\vspace{4mm}
+{\large\itshape Optimización del pipeline de ejecución para el sistema criptográfico RSA\par}
+\vspace{1.2cm}
+\begin{flushleft}
+\textbf{Curso:} Algoritmos Avanzados\\[3mm]
+\textbf{Docente:} Héctor Eduardo Ugarte Rojas\\[3mm]
+\textbf{Semestre académico:} 2026-II\\[3mm]
+\textbf{Línea asignada:} Biblioteca educativa de teoría de números y cifrado (Grupo 6)\\[3mm]
+\textbf{Repositorio:} \url{https://github.com/kita-02/ProyectoAlgoritmos}\\[3mm]
+\textbf{Integrantes:}
+\begin{itemize}
+  \item Canal Acevedo, Francesco Gabriel (222085)
+  \item Clemente Lopez, Orlando (215940)
+  \item Fernández Puente de la Vega, Camila Alexandra (231894)
+  \item Huaman Tairo, Emmi Daniela (220650)
+\end{itemize}
+\end{flushleft}
+\vfill
+{\large Cusco -- Perú\par noviembre de 2026\par}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\input{secciones/01_resumen}
+\input{secciones/02_introduccion}
+\input{secciones/03_fundamentos}
+\input{secciones/04_stack}
+\input{secciones/05_formulacion}
+\input{secciones/06_diseno_algoritmico}
+\input{secciones/07_sistema}
+\input{secciones/08_pruebas}
+\input{secciones/09_metodologia}
+\input{secciones/10_resultados}
+\input{secciones/11_discusion}
+\input{secciones/12_conclusiones}
+\input{secciones/13_referencias}
+\input{secciones/14_anexos}
+
+\end{document}

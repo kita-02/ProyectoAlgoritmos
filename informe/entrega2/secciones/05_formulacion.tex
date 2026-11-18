@@ -1,0 +1,199 @@
+% ================================================================== 5
+\section{Formulación del problema}
+\label{sec:formulacion}
+
+Como la biblioteca agrupa varios problemas algorítmicos relacionados
+(primalidad, factorización y aritmética modular aplicada a RSA), las
+entradas, salidas, restricciones, supuestos y la función objetivo se
+presentan por componente.
+
+\subsection{Entradas}
+\begin{itemize}
+  \item Un entero positivo $n$, para las pruebas de primalidad y para la factorización.
+  \item Un par de números primos $p, q$, o un tamaño de clave en bits $b$, para
+        la generación de claves RSA; opcionalmente, el exponente público $e$.
+  \item Un mensaje $m$ representado como entero, con $0 \le m < n$, o un texto corto, para cifrado y descifrado.
+  \item Parámetros de configuración: número de rondas $r$ de Miller--Rabin, límite de
+        iteraciones de la factorización, ancho de ventana $k$, uso de criba y TCR, y una
+        semilla para la reproducibilidad.
+\end{itemize}
+
+\subsection{Salidas}
+\begin{itemize}
+  \item Un valor booleano que indica si $n$ es primo, junto con el algoritmo empleado.
+  \item Los factores primos de $n$, ordenados, cuando se hallan dentro del límite de cómputo.
+  \item Un par de claves RSA: pública $(n, e)$ y privada $(n, d, p, q)$.
+  \item El texto cifrado $c$ y el texto descifrado $m'$, verificando que $m' = m$.
+  \item Métricas de cada alternativa: tiempo, número de operaciones y memoria.
+\end{itemize}
+
+\subsection{Restricciones}
+\begin{itemize}
+  \item Los enteros se representan con aritmética de precisión arbitraria (tipo \texttt{int} de Python).
+  \item La factorización por división de prueba se limita a $n \le 2^{48}$ y la de Pollard
+        Rho a $n \le 2^{64}$, por su costo (Sección~\ref{sec:introduccion}).
+  \item En RSA, $p$ y $q$ deben ser primos distintos, y $e$ debe cumplir
+        $1 < e$ y $\gcd(e, \varphi(n)) = 1$; las claves aleatorias cumplen además las
+        condiciones de FIPS~186-5 (Tabla~\ref{tab:estandares}).
+  \item El número de rondas de Miller--Rabin es $r = 20$ por defecto, para que la
+        probabilidad de error sea despreciable ($\le 4^{-20} \approx 10^{-12}$).
+\end{itemize}
+
+\subsection{Supuestos}
+\begin{itemize}
+  \item Los generadores pseudoaleatorios usados son adecuados para fines educativos, sin
+        garantizar el nivel de seguridad exigido en producción.
+  \item Las mediciones de tiempo se hacen en la misma máquina y en condiciones similares, para
+        que las comparaciones sean válidas; los conteos de operaciones no dependen de la máquina.
+  \item Se permiten bibliotecas de referencia (\texttt{sympy}, \texttt{pow} de Python) únicamente
+        para validar los resultados propios, nunca para reemplazar la implementación exigida.
+\end{itemize}
+
+\subsection{Función objetivo}
+
+La función objetivo se define por componente:
+\begin{itemize}
+  \item \textbf{Primalidad:} para un mismo $n$, minimizar el tiempo de ejecución sujeto a que la
+        probabilidad de error sea menor que un umbral fijado (o a la corrección exacta).
+  \item \textbf{Factorización:} minimizar el tiempo esperado para hallar un factor no trivial de
+        $n$, comparando un método exacto, $O(\sqrt n)$, con uno aleatorizado, $O(n^{1/4})$ esperado.
+  \item \textbf{RSA:} garantizar la corrección ($m' = m$, claves según el estándar) minimizando el
+        tiempo de generación de claves, cifrado y descifrado en función del tamaño de clave $b$.
+\end{itemize}
+
+\subsection{Ejemplo resuelto manualmente}
+\label{sec:instancia}
+
+Se resuelve a mano la instancia $p = 61$, $q = 53$, $e = 17$, $m = 65$,
+mostrando cómo la procesa cada algoritmo. Las trazas las reproduce
+automáticamente \texttt{scripts/traza\_instancia.py} (Sección~\ref{sec:pruebas}).
+
+\paragraph{Paso 1. Primalidad de $p = 61$}
+
+\textbf{División de prueba:} $61$ no es divisible entre 2 ni 3. Con $i = 5$:
+$5^2 = 25 \le 61$; se prueban 5 y 7 (ninguno divide). Con $i = 11$:
+$121 > 61$, fin. \emph{Primo}, con 4 divisiones.
+
+\textbf{Miller--Rabin} ($a = 2$): $60 = 2^2 \cdot 15$;
+$x_0 = 2^{15} \bmod 61 = 11$; $x_1 = 11^2 \bmod 61 = 60 = n - 1$ $\Rightarrow$ 2 no
+es testigo, 61 es \emph{probablemente primo}. Lo mismo ocurre para $q = 53$.
+
+\textbf{Caso adverso} (Carmichael $n = 561 = 3\cdot11\cdot17$, que engaña a la
+prueba de Fermat): $560 = 2^4 \cdot 35$.
+
+\begin{table}[H]
+\centering\small
+\caption{Miller--Rabin sobre $561$ con $a = 2$.}
+\label{tab:traza-mr}
+\begin{tabular}{@{}c l c@{}}
+\toprule
+$j$ & cálculo & $x_j$\\
+\midrule
+0 & $2^{35} \bmod 561$ & 263\\
+1 & $263^2 \bmod 561$ & 166\\
+2 & $166^2 \bmod 561$ & 67\\
+3 & $67^2 \bmod 561$ & \textbf{1}\\
+\bottomrule
+\end{tabular}
+\end{table}
+\noindent Se llegó a 1 \emph{sin pasar por} $560$: $67$ es una raíz cuadrada no
+trivial de 1, así que 2 es testigo y \textbf{561 es compuesto}. Fermat
+($2^{560} \equiv 1$) no lo habría detectado.
+
+\paragraph{Paso 2. Claves: $n = 3233$, $\varphi = 3120$, $d = 17^{-1} \bmod 3120$}
+
+\textsc{InversoModular} llama a \textsc{EuclidesExtendido}$(17, 3120)$. La
+primera iteración solo intercambia los argumentos ($q = 0$):
+
+\begin{table}[H]
+\centering\small
+\caption{Traza del Algoritmo~\ref{alg:euclides} (columna $x$: coeficiente de 17).}
+\label{tab:traza-euclides}
+\begin{tabular}{@{}c c c c c@{}}
+\toprule
+$q$ & $a$ & $b$ & $x_0$ & $x_1$\\
+\midrule
+--- & 17 & 3120 & 1 & 0\\
+0 & 3120 & 17 & 0 & 1\\
+183 & 17 & 9 & 1 & $-183$\\
+1 & 9 & 8 & $-183$ & 184\\
+1 & 8 & 1 & 184 & $-367$\\
+8 & 1 & 0 & $-367$ & 3120\\
+\bottomrule
+\end{tabular}
+\end{table}
+\noindent Resultado: $g = 1$, $x_0 = -367$, luego
+$d = -367 \bmod 3120 = \mathbf{2753}$. El mismo valor se obtiene a mano
+con las divisiones sucesivas y la sustitución hacia atrás:
+\[
+3120 = 183 \cdot 17 + 9,\quad 17 = 1 \cdot 9 + 8,\quad 9 = 1 \cdot 8 + 1,
+\]
+\[
+1 = 9 - 8 = 2 \cdot 9 - 17 = 2\,(3120 - 183 \cdot 17) - 17 = 2 \cdot 3120 - 367 \cdot 17.
+\]
+Clave pública: $(e, n) = (17, 3233)$; clave privada: $(d, n) = (2753, 3233)$.
+Para el descifrado por TCR se precalculan además
+$d_p = 2753 \bmod 60 = 53$, $d_q = 2753 \bmod 52 = 49$ y
+$q_{\mathrm{inv}} = 53^{-1} \bmod 61 = 38$.
+
+\paragraph{Paso 3. Cifrado: $c = 65^{17} \bmod 3233$}
+
+$17 = 10001_2$. Se recorre $e$ de derecha a izquierda (Algoritmo~\ref{alg:exp}):
+
+\begin{table}[H]
+\centering\small
+\caption{Traza de la exponenciación rápida.}
+\label{tab:traza-exp}
+\begin{tabular}{@{}c c c c c@{}}
+\toprule
+Iteración & bit & $r$ antes & $b$ & $r$ después\\
+\midrule
+1 & 1 & 1 & 65 & 65\\
+2 & 0 & 65 & 992 & 65\\
+3 & 0 & 65 & 1232 & 65\\
+4 & 0 & 65 & 1547 & 65\\
+5 & 1 & 65 & 789 & \textbf{2790}\\
+\bottomrule
+\end{tabular}
+\end{table}
+\noindent $c = 2790$ con \textbf{6 multiplicaciones} (4 cuadrados + 2
+productos). La versión ingenua habría usado 17.
+
+\paragraph{Paso 4. Descifrado}
+
+\textbf{Directo}:
+$m' = 2790^{2753} \bmod 3233 = \mathbf{65} = m$ \checkmark. Se calcula con la
+exponenciación rápida: como $2753 = 101011000001_2$ tiene 12 bits, cinco de ellos
+en 1, se hacen 11 cuadrados y 5 productos.
+
+\textbf{Por TCR}, como verificación alternativa:\\
+$m_1 = (2790 \bmod 61)^{53} \bmod 61 = 45^{53} \bmod 61 = 4$;\quad
+$m_2 = (2790 \bmod 53)^{49} \bmod 53 = 34^{49} \bmod 53 = 12$;\\
+$h = 38\,(4 - 12) \bmod 61 = 1$;\quad $m = 12 + 1 \cdot 53 = \mathbf{65}$ \checkmark.
+
+\paragraph{Paso 5. Ataque: factorizar $n = 3233$ con Pollard Rho}
+
+Con $f(x) = x^2 + 1$ y $x_0 = y_0 = 2$:
+
+\begin{table}[H]
+\centering\small
+\caption{Traza de Pollard Rho (Algoritmo~\ref{alg:rho}).}
+\label{tab:traza-rho}
+\begin{tabular}{@{}c r r r c@{}}
+\toprule
+$i$ & $x = f(x)$ & $y = f(f(y))$ & $|x - y|$ & $\gcd(|x-y|, 3233)$\\
+\midrule
+1 & 5 & 26 & 21 & 1\\
+2 & 26 & 2477 & 2451 & 1\\
+3 & 677 & 968 & 291 & 1\\
+4 & 2477 & 2823 & 346 & 1\\
+5 & 2529 & 226 & 2303 & 1\\
+6 & 968 & 279 & 689 & \textbf{53}\\
+\bottomrule
+\end{tabular}
+\end{table}
+\noindent En 6 iteraciones se obtiene $53$ ($689 = 13 \cdot 53$) y el cofactor
+$61$. La división de prueba necesita 9 iteraciones (20 divisiones) para el
+mismo resultado. Con $p$ y $q$, el atacante recalcula $\varphi$ y $d = 2753$:
+la clave privada queda expuesta. Con $n$ de 2048 bits, este mismo paso es
+inviable: ahí reside la seguridad de RSA.
