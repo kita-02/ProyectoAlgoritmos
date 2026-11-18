@@ -1,0 +1,48 @@
+{
+  "configuracion": "config/preliminar.json",
+  "sha256_configuracion": "348b9e1b3bcc9935",
+  "nombre": "preliminar",
+  "semilla": 2026,
+  "repeticiones": 3,
+  "calentamiento": 1,
+  "fecha": "2026-11-06T00:27:08",
+  "rsa_edu": "0.2.0",
+  "commit": "002467a",
+  "python": "3.13.18",
+  "implementacion": "CPython",
+  "sistema": "Linux-6.18.44-fc-v242-x86_64-with-glibc2.39",
+  "procesador": "x86_64",
+  "experimentos": {
+    "E1": {
+      "filas": 116,
+      "fallas": 0,
+      "segundos": 5.6
+    },
+    "E2": {
+      "filas": 81,
+      "fallas": 0,
+      "segundos": 23.4
+    },
+    "E3": {
+      "filas": 24,
+      "fallas": 0,
+      "segundos": 2.0
+    },
+    "E4": {
+      "filas": 12,
+      "fallas": 0,
+      "segundos": 10.4
+    },
+    "E5": {
+      "filas": 18,
+      "fallas": 0,
+      "segundos": 31.9
+    },
+    "E6": {
+      "filas": 36,
+      "fallas": 0,
+      "segundos": 135.1
+    }
+  },
+  "segundos_total": 208.4
+}
