@@ -2,11 +2,45 @@
 
 Biblioteca educativa de teoría de números y cifrado **RSA** para la materia
 **Algoritmos Avanzados** (2026-II) — Grupo 6. Estado: **Entrega 2**
-(Avances 4 y 5: implementación funcional, alternativas comparables,
-integración y pruebas automatizadas).
+(Avances 4 a 7: implementación funcional, alternativas comparables,
+integración, pruebas automatizadas, análisis de complejidad, diseño
+experimental y experimentos preliminares).
+
+Documentación completa: [`docs/DOCUMENTACION_TECNICA.md`](docs/DOCUMENTACION_TECNICA.md) ·
+cambios: [`CHANGELOG.md`](CHANGELOG.md) ·
+bitácora del grupo: [`docs/BITACORA_GRUPAL.md`](docs/BITACORA_GRUPAL.md) ·
+informe: [`informe/entrega2/`](informe/entrega2/).
 
 > **Uso exclusivamente educativo.** Es RSA "de libro de texto": sin relleno
 > (OAEP), por lo que **no debe usarse** para proteger información real.
+
+**Estándares:** claves según **NIST FIPS 186-5** (e = 65537, d = e⁻¹ mod λ(n));
+primitivas de cifrado y descifrado (incluido el TCR) según **PKCS #1 v2.2**
+(RFC 8017). El relleno RSAES-OAEP de PKCS #1 v2.2 se agrega en la Entrega 3.
+
+## ¿Se optimiza el RSA? (demostración en un comando)
+
+```bash
+python scripts/demo_optimizacion.py --bits 1024
+```
+
+Ejecuta el pipeline completo con los algoritmos base (sin criba, descifrado
+directo) y con los optimizados (criba, TCR y ventana) usando la misma semilla,
+verifica que ambos dan la misma clave, los mismos cifrados y recuperan todos
+los mensajes, y muestra el tiempo y las multiplicaciones de cada etapa.
+
+## Interfaz gráfica
+
+```bash
+python -m rsa_edu interfaz        # en Windows: py -m rsa_edu interfaz
+```
+
+Abre una ventana con cinco pestañas: **RSA** (generar claves, cifrar y
+descifrar de forma directa o con el TCR), **Exponenciación modular**,
+**Primalidad**, **Factorización y ataque** y **Optimización** (pipeline base
+frente a optimizado). Cada pestaña muestra en tablas el resultado, el tiempo y
+las operaciones de cada alternativa, y una línea verde si todas coinciden. Usa
+Tkinter, que viene con Python.
 
 ## Requisitos
 
@@ -73,7 +107,7 @@ python -m rsa_edu atacar -n 49 -e 5             # n no es producto de dos primos
 ## Pruebas automatizadas
 
 ```bash
-pytest                                   # ~316 pruebas
+pytest                                   # 397 pruebas
 pytest --cov=rsa_edu --cov-report=term-missing
 ```
 
@@ -86,6 +120,8 @@ pytest --cov=rsa_edu --cov-report=term-missing
 | `test_formatos.py` | R9 | archivos JSON/CSV alterados o mal formados |
 | `test_propiedades.py` | — | Hypothesis: Bézout, inverso, exponenciaciones, primalidad, factorización, RSA |
 | `test_integracion.py` | I1–I6 | 6 configuraciones del pipeline (misma clave), demo de la CLI, entradas inválidas, scripts |
+| `test_demo_optimizacion.py` | I7 | pipeline base y optimizado: misma clave, mismos cifrados |
+| `test_experimentos.py` | X1–X6 | formato, corrección y reproducibilidad del benchmark; figuras, ajustes y demos |
 
 La integración continua (`.github/workflows/pruebas.yml`) ejecuta la suite en
 Linux y Windows con Python 3.10, 3.12 y 3.13 en cada *push*.
@@ -93,12 +129,32 @@ Linux y Windows con Python 3.10, 3.12 y 3.13 en cada *push*.
 ## Scripts
 
 ```bash
-python scripts/traza_instancia.py          # traza paso a paso del pipeline (p=61, q=53)
-python scripts/demo_primalidad.py 561 2047
-python scripts/demo_factorizacion.py 600851475143
+python scripts/traza_instancia.py          # traza paso a paso del pipeline, con TCR (p=61, q=53)
+python scripts/demo_primalidad.py 561 2047 # división, Miller-Rabin y MR determinista
+python scripts/demo_factorizacion.py 600851475143   # división, Rho y Brent
+python scripts/demo_optimizacion.py        # pipeline base frente a optimizado
+python scripts/prototipo_gmpy2.py          # binaria, ventana, pow y gmpy2
 python scripts/generar_instancias.py       # data/instancias/*.json (semilla 2026)
-python scripts/benchmark.py                # experimentos preliminares E1-E4 -> resultados/*.csv
 ```
+
+## Experimentos
+
+```bash
+python scripts/verificar_reproducibilidad.py                 # piloto: correctos, reproducibles, coherentes
+python scripts/benchmark.py --config config/preliminar.json  # E1-E6 -> resultados/preliminar/*.csv
+python scripts/graficar.py resultados/preliminar             # figuras/ y tablas/
+python scripts/ajuste_complejidad.py resultados/preliminar   # teoría frente a mediciones
+python scripts/benchmark.py                                  # diseño definitivo (config/experimentos.json)
+```
+
+| Experimento | Primera alternativa | Segunda alternativa |
+|---|---|---|
+| E1 primalidad | división de prueba | Miller-Rabin / MR determinista |
+| E2 factorización | división de prueba | Pollard Rho (Floyd) / Brent |
+| E3 exponenciación | binaria | ventana deslizante |
+| E4 descifrado | directo | Teorema Chino del Resto |
+| E5 generar primos | sin criba | con criba (primos < 2000) |
+| E6 pipeline completo | base | optimizado (criba + TCR + ventana) |
 
 ## Estructura del repositorio
 
@@ -112,13 +168,16 @@ python scripts/benchmark.py                # experimentos preliminares E1-E4 -> 
 │   ├── rsa.py             # claves (manual y FIPS 186-5), cifrar/descifrar, TCR, texto
 │   ├── pipeline.py        # ConfigPipeline / ejecutar_pipeline
 │   ├── formatos.py        # instancias y claves (JSON), resultados (CSV) con validación
-│   └── __main__.py        # CLI
+│   ├── __main__.py        # CLI
+│   └── interfaz/          # interfaz gráfica (Tkinter): una pestaña por módulo
 ├── tests/                 # suite pytest + Hypothesis
-├── scripts/               # trazas, demos, generación de instancias, benchmark
+├── scripts/               # trazas, demos, instancias, benchmark, gráficos, ajustes
 ├── data/instancias/       # primos, semiprimos y adversos (JSON)
-├── config/                # configuración de experimentos
+├── config/                # piloto.json, preliminar.json, experimentos.json (definitivo)
+├── resultados/            # piloto/ y preliminar/: CSV, figuras, tablas, ajustes
+├── docs/                  # documentación técnica y bitácora grupal
 ├── .github/workflows/     # integración continua
-└── informe/
+└── informe/entrega2/      # informe de la Entrega 2 (LaTeX por secciones y PDF)
 ```
 
 ## Integrantes y distribución de módulos
@@ -130,7 +189,18 @@ python scripts/benchmark.py                # experimentos preliminares E1-E4 -> 
 | Camila Fernández Puente de la Vega | `factorizacion.py`, `ataque.py`, `test_factorizacion.py` |
 | Emmi Daniela Huaman Tairo | `rsa.py`, `pipeline.py`, `formatos.py`, `__main__.py`, pruebas de RSA/formatos/integración/propiedades, scripts de instancias y benchmark, CI, README |
 
-## Pendiente (Entrega 3)
+Avances 6 y 7: Francesco (`prototipo_gmpy2.py`, `graficar.py`, informe), Orlando
+(`verificar_reproducibilidad.py`, `test_experimentos.py`, piloto, bitácora grupal), Camila
+(`ajuste_complejidad.py`, demo con Brent, resultados preliminares) y Emmi
+(`benchmark.py`, configuraciones, `demo_optimizacion.py`, documentación).
 
-Gráficos de los experimentos (`scripts/graficar.py`), análisis estadístico de
-E1–E4 a mayor escala, prototipo comparativo con `gmpy2` y el informe final.
+Interfaz gráfica: cada integrante programó la pestaña de su módulo —
+Francesco (exponenciación), Orlando (primalidad), Camila (factorización y
+ataque) y Emmi (base común, RSA, optimización y ventana principal).
+
+## Próximos pasos (Entrega 3)
+
+- Ejecutar el diseño definitivo (`config/experimentos.json`) y actualizar las
+  tablas del informe con esos resultados.
+- Relleno RSAES-OAEP (PKCS #1 v2.2) y su costo; comparación con OpenSSL.
+- Reflexión individual de aprendizaje e informe final.
