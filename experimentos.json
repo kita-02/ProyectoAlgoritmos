@@ -1,0 +1,70 @@
+{
+  "nombre": "definitivo",
+  "descripcion": "Diseño experimental definitivo de la Entrega 2 (Avance 6). Se ejecuta completo para el informe de la Entrega 2.",
+  "semilla": 2026,
+  "repeticiones": 5,
+  "calentamiento": 1,
+  "instancias": "data/instancias",
+  "E1_primalidad": {
+    "algoritmos": [
+      "division_tentativa",
+      "miller_rabin",
+      "miller_rabin_determinista"
+    ],
+    "rondas_mr": 20,
+    "max_bits_tentativa": 48,
+    "max_bits": 512
+  },
+  "E2_factorizacion": {
+    "algoritmos": [
+      "tentativa",
+      "rho",
+      "brent"
+    ],
+    "max_bits_tentativa": 48,
+    "max_bits": 64
+  },
+  "E3_exponenciacion": {
+    "algoritmos": [
+      "binaria",
+      "ventana"
+    ],
+    "bits": [
+      256,
+      512,
+      1024,
+      2048,
+      4096
+    ],
+    "instancias_por_tamano": 5
+  },
+  "E4_descifrado": {
+    "bits": [
+      512,
+      1024,
+      2048,
+      4096
+    ],
+    "claves_por_tamano": 3,
+    "mensajes_por_clave": 10
+  },
+  "E5_generacion_primos": {
+    "bits": [
+      256,
+      512,
+      1024,
+      2048
+    ],
+    "instancias_por_tamano": 5
+  },
+  "E6_pipeline": {
+    "bits": [
+      512,
+      1024,
+      2048,
+      4096
+    ],
+    "semillas_por_tamano": 3,
+    "mensajes": 10
+  }
+}

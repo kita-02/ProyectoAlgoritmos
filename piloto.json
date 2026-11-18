@@ -1,0 +1,58 @@
+{
+  "nombre": "piloto",
+  "descripcion": "Experimento piloto (Avance 6): tamaños pequeños para comprobar que el procedimiento produce datos correctos, coherentes y reproducibles.",
+  "semilla": 2026,
+  "repeticiones": 3,
+  "calentamiento": 1,
+  "instancias": "data/instancias",
+  "E1_primalidad": {
+    "algoritmos": [
+      "division_tentativa",
+      "miller_rabin",
+      "miller_rabin_determinista"
+    ],
+    "rondas_mr": 20,
+    "max_bits_tentativa": 32,
+    "max_bits": 128
+  },
+  "E2_factorizacion": {
+    "algoritmos": [
+      "tentativa",
+      "rho",
+      "brent"
+    ],
+    "max_bits_tentativa": 32,
+    "max_bits": 40
+  },
+  "E3_exponenciacion": {
+    "algoritmos": [
+      "binaria",
+      "ventana"
+    ],
+    "bits": [
+      256,
+      512
+    ],
+    "instancias_por_tamano": 2
+  },
+  "E4_descifrado": {
+    "bits": [
+      512
+    ],
+    "claves_por_tamano": 1,
+    "mensajes_por_clave": 5
+  },
+  "E5_generacion_primos": {
+    "bits": [
+      256
+    ],
+    "instancias_por_tamano": 2
+  },
+  "E6_pipeline": {
+    "bits": [
+      512
+    ],
+    "semillas_por_tamano": 1,
+    "mensajes": 5
+  }
+}

@@ -3,5 +3,7 @@
 pytest>=8.0         # pruebas unitarias y de integración
 pytest-cov>=5.0     # cobertura de código
 hypothesis>=6.100   # pruebas basadas en propiedades
-sympy>=1.12         # oráculo de referencia (solo en las pruebas)
+sympy>=1.12         # oráculo de referencia (pruebas y verificación de experimentos)
+pandas>=2.0         # tablas de resultados (scripts/graficar.py, ajuste_complejidad.py)
+matplotlib>=3.7     # figuras (scripts/graficar.py)
 gmpy2>=2.1          # opcional: prototipo/pipeline con aritmética GMP
