@@ -1,4 +1,4 @@
-"""Demo de factorización: división de prueba vs. Pollard Rho.
+"""Demo de factorización: división de prueba vs. Pollard Rho (Floyd) vs. Brent.
 
 Uso (desde la raíz del repositorio):
     python scripts/demo_factorizacion.py                       # n = 3233 (Avance 1)
@@ -8,7 +8,7 @@ Uso (desde la raíz del repositorio):
 Verificación de la salida (sin depender del algoritmo que se prueba):
     * el producto de los factores es exactamente n;
     * cada factor es primo (según la división de prueba de primalidad);
-    * los dos métodos devuelven la misma lista.
+    * los métodos devuelven la misma lista (ordenada).
 """
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ def main() -> int:
     for n in a.numeros:
         print(f"\nn = {n}  ({n.bit_length()} bits)")
         resultados = {}
-        for metodo in ("tentativa", "rho"):
+        for metodo in ("tentativa", "rho", "brent"):
             if metodo == "tentativa" and n >= LIMITE_TENTATIVA:
                 print(f"  {'tentativa':<10} (omitido: n demasiado grande para división de prueba)")
                 continue
@@ -72,10 +72,10 @@ def main() -> int:
             expr = " x ".join(map(str, f)) if f else "(sin factores)"
             print(f"  {metodo:<10} {expr:<40} {t:>10.3f} ms   "
                   f"{'[OK] producto = n y factores primos' if ok else '[FALLA]'}")
-        if len(resultados) == 2:
-            igual = resultados["tentativa"] == resultados["rho"]
+        if len(resultados) >= 2:
+            igual = len({tuple(f) for f in resultados.values()}) == 1
             todo_ok &= igual
-            print(f"  ambos métodos coinciden: {'sí [OK]' if igual else 'NO [FALLA]'}")
+            print(f"  los {len(resultados)} métodos coinciden: {'sí [OK]' if igual else 'NO [FALLA]'}")
 
     print("\nResultado:", "todas las factorizaciones verificadas [OK]" if todo_ok
           else "hubo fallas [FALLA]")
