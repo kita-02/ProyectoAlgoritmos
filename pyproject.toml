@@ -17,5 +17,8 @@ gmp = ["gmpy2>=2.1"]
 [project.scripts]
 rsa-edu = "rsa_edu.__main__:main"
 
+[project.gui-scripts]
+rsa-edu-interfaz = "rsa_edu.interfaz.app:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]

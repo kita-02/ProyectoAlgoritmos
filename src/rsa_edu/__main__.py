@@ -12,6 +12,7 @@ Subcomandos (todos devuelven código 0 si terminan bien y 1 si hay error):
   atacar      -n N -e E                   factoriza n y reconstruye d
   comparar    TAREA ENTRADA                ejecuta las dos alternativas y compara
   pipeline    --bits B [--crt --ventana --sin-criba --gmpy2]
+  interfaz                               abre la interfaz gráfica
 
 Las opciones largas aceptan también un solo guion (-salida, -claves, -crt).
 """
@@ -204,6 +205,11 @@ def cmd_pipeline(a: argparse.Namespace) -> int:
     return 0 if r.correcto else 1
 
 
+def cmd_interfaz(a: argparse.Namespace) -> int:
+    from .interfaz.app import main as abrir_interfaz
+    return abrir_interfaz()
+
+
 # ---------------------------------------------------------------------------
 def construir_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="python -m rsa_edu",
@@ -278,6 +284,9 @@ def construir_parser() -> argparse.ArgumentParser:
     _opt(p, "gmpy2", action="store_true")
     _opt(p, "sin-criba", action="store_true", dest="sin_criba")
     p.set_defaults(func=cmd_pipeline)
+
+    p = sub.add_parser("interfaz", help="abrir la interfaz gráfica (ventana)")
+    p.set_defaults(func=cmd_interfaz)
     return ap
 
 
