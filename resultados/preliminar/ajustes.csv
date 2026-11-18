@@ -1,0 +1,20 @@
+experimento,algoritmo,modelo,rango,observado,teorico,r2,coincide,nota
+E1,division_tentativa,log2(ms) = a + s·b,24-40,0.481,s = 0.5,0.9999,sí,cada bit multiplica el tiempo por 1.40 (teoría 1.41)
+E2,tentativa,log2(ms) = a + s·b,24-40,0.498,s = 0.5,0.9998,sí,cada bit multiplica el tiempo por 1.41 (teoría 1.41)
+E2,rho,log2(ms) = a + s·b,32-64,0.261,s = 0.25,0.9732,sí,cada bit multiplica el tiempo por 1.20 (teoría 1.19)
+E2,brent,log2(ms) = a + s·b,32-64,0.216,s = 0.25,0.9859,sí,cada bit multiplica el tiempo por 1.16 (teoría 1.19)
+E3,binaria,log(ms) = a + alfa·log(b),256-2048,2.494,alfa -> 3; entre 2 y 3 con costo fijo,0.9986,sí,b multiplicaciones de b bits (escolar); el costo fijo por operación del intérprete baja el exponente observado
+E3,ventana,log(ms) = a + alfa·log(b),256-2048,2.371,alfa -> 3; entre 2 y 3 con costo fijo,0.9981,sí,b multiplicaciones de b bits (escolar); el costo fijo por operación del intérprete baja el exponente observado
+E4,directo,log(ms) = a + alfa·log(b),512-2048,2.584,alfa -> 3; entre 2 y 3 con costo fijo,0.999,sí,b multiplicaciones de b bits (escolar); el costo fijo por operación del intérprete baja el exponente observado
+E4,tcr,log(ms) = a + alfa·log(b),512-2048,2.325,alfa -> 3; entre 2 y 3 con costo fijo,0.9995,sí,b multiplicaciones de b bits (escolar); el costo fijo por operación del intérprete baja el exponente observado
+E3,binaria,mult = c·b,256-2048,1.506,"c = 1,5",-,sí,promedio de mult/b
+E3,ventana,mult = c·b,256-2048,1.18,c = 1 + 1/(k+1) + 2^(k-1)/b ≈ 1.189,-,sí,k = ventana_optima(b)
+E4,directo/tcr,mejora,512,2.287,hasta 2^2 = 4,-,sí,se acerca a 4 al crecer b (el costo fijo pesa menos)
+E4,directo/tcr,mejora,1024,2.626,hasta 2^2 = 4,-,sí,se acerca a 4 al crecer b (el costo fijo pesa menos)
+E4,directo/tcr,mejora,2048,3.264,hasta 2^2 = 4,-,sí,se acerca a 4 al crecer b (el costo fijo pesa menos)
+E5,con/sin criba,fracción de llamadas a MR,todas,0.172,prod(1-1/p) = 0.147,-,sí,"reducción observada 82.8%, teórica 85.3%"
+E6,base,log(ms) = a + alfa·log(b),512-2048,3.407,alfa -> 4; menor con costo fijo,0.9923,sí,generar primos: O(b) candidatos × MR O(b^3)
+E6,optimizado,log(ms) = a + alfa·log(b),512-2048,2.973,alfa -> 4; menor con costo fijo,0.992,sí,generar primos: O(b) candidatos × MR O(b^3)
+E6,base/optimizado,mejora total,512,3.133,> 1,-,sí,"mismo resultado, menos tiempo"
+E6,base/optimizado,mejora total,1024,4.07,> 1,-,sí,"mismo resultado, menos tiempo"
+E6,base/optimizado,mejora total,2048,5.778,> 1,-,sí,"mismo resultado, menos tiempo"
