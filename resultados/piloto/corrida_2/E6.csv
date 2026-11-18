@@ -1,0 +1,7 @@
+experimento,algoritmo,etapa,instancia,bits,repeticiones,ms_mediana,ms_min,ms_max,cv,mult_mod,div_mod,mcd,iteraciones,kib_pico,extra,ok,estable
+E6,base,claves,semilla#0,512,3,77.59422,77.354,77.93168,0.0037,149697,12,1,100036,6.86,,True,True
+E6,base,cifrado,semilla#0,512,3,0.13487,0.12872,0.13543,0.028,90,0,0,85,1.19,mensajes=5,True,True
+E6,base,descifrado,semilla#0,512,3,6.04193,5.56091,6.71968,0.0953,3895,0,0,2545,1.31,mensajes=5,True,True
+E6,optimizado,claves,semilla#0,512,3,21.68656,21.65858,21.72294,0.0015,36489,23100,1,24521,7.12,,True,True
+E6,optimizado,cifrado,semilla#0,512,3,0.12725,0.12595,0.13454,0.0358,90,0,0,85,1.19,mensajes=5,True,True
+E6,optimizado,descifrado,semilla#0,512,3,2.11594,2.11326,2.15062,0.0098,3130,0,0,1195,2.41,mensajes=5,True,True

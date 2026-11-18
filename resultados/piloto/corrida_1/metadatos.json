@@ -1,0 +1,48 @@
+{
+  "configuracion": "config/piloto.json",
+  "sha256_configuracion": "6360c4e9cc946e98",
+  "nombre": "piloto",
+  "semilla": 2026,
+  "repeticiones": 3,
+  "calentamiento": 1,
+  "fecha": "2026-11-06T00:23:26",
+  "rsa_edu": "0.2.0",
+  "commit": "002467a",
+  "python": "3.13.18",
+  "implementacion": "CPython",
+  "sistema": "Linux-6.18.44-fc-v242-x86_64-with-glibc2.39",
+  "procesador": "x86_64",
+  "experimentos": {
+    "E1": {
+      "filas": 107,
+      "fallas": 0,
+      "segundos": 2.6
+    },
+    "E2": {
+      "filas": 57,
+      "fallas": 0,
+      "segundos": 1.7
+    },
+    "E3": {
+      "filas": 8,
+      "fallas": 0,
+      "segundos": 0.2
+    },
+    "E4": {
+      "filas": 2,
+      "fallas": 0,
+      "segundos": 0.1
+    },
+    "E5": {
+      "filas": 4,
+      "fallas": 0,
+      "segundos": 1.1
+    },
+    "E6": {
+      "filas": 6,
+      "fallas": 0,
+      "segundos": 1.7
+    }
+  },
+  "segundos_total": 7.4
+}

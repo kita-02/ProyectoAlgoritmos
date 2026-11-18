@@ -1,0 +1,5 @@
+experimento,algoritmo,etapa,instancia,bits,repeticiones,ms_mediana,ms_min,ms_max,cv,mult_mod,div_mod,mcd,iteraciones,kib_pico,extra,ok,estable
+E5,sin_criba,,semilla#0,256,3,53.82638,51.05675,66.32826,0.1426,97048,0,0,64969,16.05,llamadas_mr=235,True,True
+E5,con_criba,,semilla#0,256,3,11.30748,11.23722,11.31724,0.0039,18340,10849,0,12469,10.21,llamadas_mr=29,True,True
+E5,sin_criba,,semilla#1,256,3,4.50331,4.44568,4.51116,0.008,8269,0,0,5612,7.13,llamadas_mr=3,True,True
+E5,con_criba,,semilla#1,256,3,4.15999,4.1198,4.26327,0.0177,7509,316,0,5103,6.93,llamadas_mr=1,True,True

@@ -1,4 +1,4 @@
-"""Demostración de primalidad: compara la división de prueba con Miller-Rabin.
+"""Demostración de primalidad: división de prueba, Miller-Rabin y MR determinista.
 
 Modo de uso (ejecutar desde la raíz del repositorio):
     python scripts/demo_primalidad.py                  # usa la instancia conocida
@@ -6,7 +6,8 @@ Modo de uso (ejecutar desde la raíz del repositorio):
     python scripts/demo_primalidad.py 2147483647 --rondas 5 --semilla 2026
 
 Cómo verificar la salida:
-    * ambos métodos tienen que llegar al mismo resultado;
+    * los tres métodos tienen que llegar al mismo resultado (el determinista,
+      con las 12 bases 2..37, solo se usa para n < 3,18e23);
     * cuando n es compuesto se imprime un divisor, para revisarlo a mano.
 """
 from __future__ import annotations
@@ -21,7 +22,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-from rsa_edu.primalidad import division_tentativa, miller_rabin  # noqa: E402
+from rsa_edu.primalidad import (LIMITE_DETERMINISTA, division_tentativa,  # noqa: E402
+                                miller_rabin, miller_rabin_determinista)
 
 INSTANCIA_CONOCIDA = [61, 53, 561, 3233]     # p, q, un Carmichael y el n del Avance 1
 LIMITE_DIVISION = 2**44                      # cerca de 1 s; sobre este valor dividir es muy lento
@@ -63,8 +65,9 @@ def main() -> int:
     a = ap.parse_args()
     rng = random.Random(a.semilla) if a.semilla is not None else None
 
-    print(f"{'n':>22} | {'División de prueba':>22} | {'Miller-Rabin (r=' + str(a.rondas) + ')':>24} | Verificación")
-    print("-" * 100)
+    print(f"{'n':>22} | {'División de prueba':>22} | {'Miller-Rabin (r=' + str(a.rondas) + ')':>24}"
+          f" | {'MR determinista':>22} | Verificación")
+    print("-" * 125)
     todo_ok = True
     for n in a.numeros:
         # Miller-Rabin se ejecuta siempre; la división solo si n es manejable
@@ -76,6 +79,12 @@ def main() -> int:
         else:
             td, txt_td, coinciden = None, f"{'(omitido, n grande)':>22}", True
         txt_mr = f"{etiqueta(n, mr):>9} {t_mr:>11.1f} µs"
+        if n < LIMITE_DETERMINISTA:
+            det, t_det = medir(miller_rabin_determinista, n)
+            txt_det = f"{etiqueta(n, det):>9} {t_det:>9.1f} µs"
+            coinciden = coinciden and det == mr
+        else:
+            txt_det = f"{'(fuera de rango)':>22}"
 
         # Columna de verificación: se contrasta con un divisor explícito
         if not coinciden:
@@ -88,10 +97,10 @@ def main() -> int:
         else:
             verif = "OK"
         todo_ok &= coinciden
-        print(f"{n:>22} | {txt_td} | {txt_mr} | {verif}")
+        print(f"{n:>22} | {txt_td} | {txt_mr} | {txt_det} | {verif}")
 
-    print("-" * 100)
-    print("Resultado:", "ambos métodos coinciden en todos los casos [OK]" if todo_ok
+    print("-" * 125)
+    print("Resultado:", "los métodos coinciden en todos los casos [OK]" if todo_ok
           else "hay discrepancias [FALLA]")
     return 0 if todo_ok else 1
 
